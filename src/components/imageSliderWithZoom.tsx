@@ -5,7 +5,12 @@ import { cn, getImageUrl } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Loader2, Search } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
-export function ImageSliderWithZoom({ images }: { images: string[] }) {
+interface ImageSliderWithZoomProps {
+  images: string[];
+  productName?: string;
+}
+
+export function ImageSliderWithZoom({ images, productName }: ImageSliderWithZoomProps) {
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
@@ -106,7 +111,7 @@ export function ImageSliderWithZoom({ images }: { images: string[] }) {
 
           <img
             src={getImageUrl(images[mainImageIndex], "large")}
-            alt="Product image"
+            alt={productName || "Tuotekuva"}
             className={cn(
               "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
               isLoading ? "opacity-0" : "opacity-100"
@@ -173,7 +178,7 @@ export function ImageSliderWithZoom({ images }: { images: string[] }) {
 
             <img
               src={getImageUrl(images[safeIndex], "large")}
-              alt="Zoomed image"
+              alt={`${productName || "Tuote"} - suurennettu`}
               className="absolute pointer-events-none w-full h-full object-cover"
               style={{
                 transformOrigin: `${zoomPosition.x * 100}% ${zoomPosition.y * 100}%`,
@@ -206,7 +211,7 @@ export function ImageSliderWithZoom({ images }: { images: string[] }) {
             >
               <img
                 src={getImageUrl(image, "thumbnail")}
-                alt="Product Image"
+                alt={`${productName || "Tuote"} - pikkukuva`}
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
               />

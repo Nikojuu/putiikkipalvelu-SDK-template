@@ -69,6 +69,7 @@ const ProductDetail = ({ product }: { product: ProductFromApi }) => {
                   ? selectedVariation!.images
                   : product.images
               }
+              productName={product.name}
             />
           </div>
           <div className="md:hidden">
@@ -78,6 +79,7 @@ const ProductDetail = ({ product }: { product: ProductFromApi }) => {
                   ? selectedVariation!.images
                   : product.images
               }
+              productName={product.name}
             />
           </div>
         </div>

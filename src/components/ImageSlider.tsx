@@ -7,9 +7,10 @@ import { useState, useEffect } from "react";
 
 interface iAppProps {
   images: string[];
+  productName?: string;
 }
 
-export function ImageSlider({ images }: iAppProps) {
+export function ImageSlider({ images, productName }: iAppProps) {
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
@@ -61,7 +62,7 @@ export function ImageSlider({ images }: iAppProps) {
           src={getImageUrl(images[mainImageIndex], "small")}
           srcSet={`${getImageUrl(images[mainImageIndex], "small")} 400w, ${getImageUrl(images[mainImageIndex], "medium")} 800w`}
           sizes="400px"
-          alt="Product image"
+          alt={productName || "Tuotekuva"}
           className={cn(
             "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
             isLoading ? "opacity-0" : "opacity-100"
@@ -112,7 +113,7 @@ export function ImageSlider({ images }: iAppProps) {
           >
             <img
               src={getImageUrl(image, "thumbnail")}
-              alt="Product Image"
+              alt={`${productName || "Tuote"} - pikkukuva`}
               className="absolute inset-0 w-full h-full object-cover"
               loading="lazy"
             />
