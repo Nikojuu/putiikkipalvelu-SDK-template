@@ -1,10 +1,10 @@
 import { NavbarLinks } from "./NavbarLinks";
 import Cart from "../Cart/Cart";
 import MobileLinks from "./MobileLinks";
-import { ApiCategory, Campaign } from "@/app/utils/types";
+import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
+import { ApiCategory } from "@/app/utils/types";
 import CustomerDropdown from "./CustomerDropdown";
 import { getUser } from "@/lib/actions/authActions";
-import { cookies } from "next/headers";
 
 const getNavbarData = async (): Promise<{
   categories: ApiCategory[];

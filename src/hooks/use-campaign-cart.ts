@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { CartItem } from "./use-cart";
-import { Campaign } from "@/app/utils/types";
+import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
 import { isSaleActive } from "@/lib/utils";
 
 // Types for campaign calculations

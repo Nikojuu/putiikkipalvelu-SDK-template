@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import {
   ShipmentMethodsWithLocations,
   ShipmentMethods,
-  Campaign,
 } from "@/app/utils/types";
+import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
 import { useState } from "react";
 import { useCampaignCart } from "@/hooks/use-campaign-cart";
 import { useCart } from "@/hooks/use-cart";

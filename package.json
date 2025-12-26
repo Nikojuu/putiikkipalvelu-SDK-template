@@ -10,6 +10,7 @@
     "email": "email dev --dir src/components/email"
   },
   "dependencies": {
+    "@putiikkipalvelu/storefront-sdk": "file:../../verkkokauppapalvelu/packages/sdk/putiikkipalvelu-storefront-sdk-0.1.0.tgz",
     "@conform-to/react": "^1.2.2",
     "@conform-to/zod": "^1.2.2",
     "@hookform/resolvers": "^3.9.1",

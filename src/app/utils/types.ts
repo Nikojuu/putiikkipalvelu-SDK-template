@@ -207,7 +207,7 @@ export interface ShipmentMethods {
   min_estimate_delivery_days: number | null; // nullable
   active: boolean;
   price: number;
-  shipitMethod: ShipitShippingMethod;
+  shipitMethod?: ShipitShippingMethod; // optional - not included in campaign responses
 }
 
 export interface ApiResponseShipmentMethods {
@@ -357,11 +357,8 @@ export type User = {
   email: string;
 };
 
-// Campaign Types
-export enum CampaignType {
-  FREE_SHIPPING = "FREE_SHIPPING",
-  BUY_X_PAY_Y = "BUY_X_PAY_Y",
-}
+// Campaign Types - matches SDK type
+export type CampaignType = "FREE_SHIPPING" | "BUY_X_PAY_Y";
 
 export interface Campaign {
   id: string;
@@ -369,11 +366,11 @@ export interface Campaign {
   name: string;
   description: string | null;
   type: CampaignType;
-  startDate: Date;
-  endDate: Date | null;
+  startDate: Date | string;
+  endDate: Date | string | null;
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   FreeShippingCampaign?: FreeShippingCampaign | null;
   BuyXPayYCampaign?: BuyXPayYCampaign | null;
 }

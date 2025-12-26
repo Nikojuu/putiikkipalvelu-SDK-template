@@ -1,7 +1,7 @@
 "use client";
 
 import { LOGO_URL } from "@/app/utils/constants";
-import { Campaign } from "@/app/utils/types";
+import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";

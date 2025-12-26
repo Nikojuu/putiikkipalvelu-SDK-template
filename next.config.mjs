@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Transpile the linked SDK package
+  transpilePackages: ["@putiikkipalvelu/storefront-sdk"],
   images: {
     remotePatterns: [
       {

@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { CampaignAddedCartItems } from "./CampaignAddedCartItems";
-import { Campaign } from "@/app/utils/types";
+import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
 
 export type ShipmentMethods = {
   id: string;

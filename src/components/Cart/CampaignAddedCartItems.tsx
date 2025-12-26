@@ -1,6 +1,6 @@
 "use client";
 
-import { Campaign } from "@/app/utils/types";
+import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
 import { getImageUrl, isSaleActive } from "@/lib/utils";
 import { Minus, Plus, X } from "lucide-react";
 import Link from "next/link";

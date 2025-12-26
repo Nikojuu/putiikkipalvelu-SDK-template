@@ -16,7 +16,7 @@ import {
 } from "../ui/sheet";
 import { ScrollArea } from "../ui/scroll-area";
 import CartItem from "./CartItem";
-import { Campaign } from "@/app/utils/types";
+import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
 
 const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
   const items = useCart((state) => state.items);
