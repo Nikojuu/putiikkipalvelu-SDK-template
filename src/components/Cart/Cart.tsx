@@ -4,7 +4,6 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/hooks/use-cart";
-import { useCampaignCart } from "@/hooks/use-campaign-cart";
 import { useEffect, useState, useRef } from "react";
 import {
   Sheet,
@@ -16,7 +15,10 @@ import {
 } from "../ui/sheet";
 import { ScrollArea } from "../ui/scroll-area";
 import CartItem from "./CartItem";
-import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
+import {
+  calculateCartWithCampaigns,
+  type Campaign,
+} from "@putiikkipalvelu/storefront-sdk";
 
 const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
   const items = useCart((state) => state.items);
@@ -26,22 +28,14 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const initializedRef = useRef<boolean>(false);
 
-  // Find campaigns
-  const freeShippingCampaign = campaigns.find(
-    (campaign) => campaign.type === "FREE_SHIPPING"
-  );
-  const buyXPayYCampaign = campaigns.find(
-    (campaign) => campaign.type === "BUY_X_PAY_Y"
-  );
-
-  // Use the campaign cart hook for calculations
+  // Calculate cart with campaigns applied
   const {
     calculatedItems,
     cartTotal,
     originalTotal,
     totalSavings,
     freeShipping,
-  } = useCampaignCart(items, buyXPayYCampaign, freeShippingCampaign);
+  } = calculateCartWithCampaigns(items, campaigns);
 
   // Handle hydration mismatch for client-only content
   useEffect(() => {
@@ -123,17 +117,17 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
                 <div className="space-y-2 text-sm font-secondary">
                   <div className="flex justify-between text-charcoal/60">
                     <span>Alkuperäinen hinta</span>
-                    <span>{originalTotal.toFixed(2)} €</span>
+                    <span>{(originalTotal / 100).toFixed(2)} €</span>
                   </div>
                   <div className="flex justify-between text-deep-burgundy">
                     <span>Kampanja säästö</span>
-                    <span>-{totalSavings.toFixed(2)} €</span>
+                    <span>-{(totalSavings / 100).toFixed(2)} €</span>
                   </div>
                 </div>
               )}
 
               {/* Free shipping status */}
-              {freeShippingCampaign && (
+              {freeShipping.campaignName && (
                 <div className="relative p-3 text-center">
                   <div className="absolute inset-0 border border-rose-gold/20 pointer-events-none" />
                   {freeShipping.isEligible ? (
@@ -145,7 +139,7 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
                     <p className="text-xs font-secondary text-charcoal/60">
                       Lisää{" "}
                       <span className="text-rose-gold font-medium">
-                        {freeShipping.remainingAmount.toFixed(2)} €
+                        {(freeShipping.remainingAmount / 100).toFixed(2)} €
                       </span>{" "}
                       ilmaiseen toimitukseen
                     </p>
@@ -159,13 +153,13 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
                   Yhteensä
                 </span>
                 <span className="text-base text-charcoal font-bold">
-                  {cartTotal.toFixed(2)} €
+                  {(cartTotal / 100).toFixed(2)} €
                 </span>
               </div>
 
               {totalSavings > 0 && (
                 <p className="text-xs font-secondary text-center text-deep-burgundy">
-                  Säästät {totalSavings.toFixed(2)} € kampanjalla!
+                  Säästät {(totalSavings / 100).toFixed(2)} € kampanjalla!
                 </p>
               )}
 

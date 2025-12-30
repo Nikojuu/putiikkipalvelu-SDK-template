@@ -1,11 +1,15 @@
 import { PriceInfo } from "@/app/utils/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type {
-  Product,
-  ProductDetail,
-  ProductVariation,
+import {
+  isSaleActive,
+  type Product,
+  type ProductDetail,
+  type ProductVariation,
 } from "@putiikkipalvelu/storefront-sdk";
+
+// Re-export isSaleActive for backwards compatibility
+export { isSaleActive };
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -38,38 +42,6 @@ export function getImageUrl(
 }
 
 // priceUtils.ts
-
-export const isSaleActive = (
-  startDate: Date | string | null | undefined,
-  endDate: Date | string | null | undefined
-): boolean => {
-  // If no dates are set, sale is considered active
-  if (!startDate && !endDate) {
-    return true;
-  }
-
-  const now = new Date();
-  // Convert dates to comparable format
-  const start = startDate ? new Date(startDate) : null;
-  const end = endDate ? new Date(endDate) : null;
-
-  // If only start date is set
-  if (start && !end) {
-    return now >= start;
-  }
-
-  // If only end date is set
-  if (!start && end) {
-    return now <= end;
-  }
-
-  // If both dates are set
-  if (start && end) {
-    return now >= start && now <= end;
-  }
-
-  return true;
-};
 
 export const getPriceInfo = (item: Product): PriceInfo => {
   const convertToEuros = (cents: number | null): number | null =>

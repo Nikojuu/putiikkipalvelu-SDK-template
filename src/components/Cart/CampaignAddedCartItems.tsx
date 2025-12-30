@@ -1,18 +1,17 @@
 "use client";
 
-import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
+import type { Campaign, CalculatedCartItem } from "@putiikkipalvelu/storefront-sdk";
 import { getImageUrl, isSaleActive } from "@/lib/utils";
 import { Minus, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
-import { CampaignCalculatedItem } from "@/hooks/use-campaign-cart";
 
 export const CampaignAddedCartItems = ({
   buyXPayYCampaign,
   calculatedItems,
 }: {
   buyXPayYCampaign: Campaign | undefined;
-  calculatedItems: CampaignCalculatedItem[];
+  calculatedItems: CalculatedCartItem[];
 }) => {
   const incrementQuantity = useCart((state) => state.incrementQuantity);
   const decrementQuantity = useCart((state) => state.decrementQuantity);

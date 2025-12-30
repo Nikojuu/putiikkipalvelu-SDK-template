@@ -8,26 +8,24 @@ import {
   ShipmentMethodsWithLocations,
   ShipmentMethods,
 } from "@/app/utils/types";
-import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
+import {
+  calculateCartWithCampaigns,
+  type Campaign,
+} from "@putiikkipalvelu/storefront-sdk";
 import { useState } from "react";
-import { useCampaignCart } from "@/hooks/use-campaign-cart";
 import { useCart } from "@/hooks/use-cart";
 
 export function SelectShipmentMethod({
   shipmentMethodsAndLocations,
-
   setChosenShipmentMethod,
-  freeShippingCampaign,
-  buyXPayYCampaign,
+  campaigns,
 }: {
   shipmentMethodsAndLocations: ShipmentMethodsWithLocations | null;
-
   setChosenShipmentMethod: (shipmentMethod: {
     shipmentMethodId: string;
     pickupId: string | null;
   }) => void;
-  freeShippingCampaign: Campaign | undefined;
-  buyXPayYCampaign?: Campaign;
+  campaigns: Campaign[];
 }) {
   const [selectedShipmentMethod, setSelectedShipmentMethod] =
     useState<unknown>(null);
@@ -38,11 +36,7 @@ export function SelectShipmentMethod({
 
   // Get cart items and free shipping status
   const items = useCart((state) => state.items);
-  const { freeShipping } = useCampaignCart(
-    items,
-    buyXPayYCampaign,
-    freeShippingCampaign
-  );
+  const { freeShipping } = calculateCartWithCampaigns(items, campaigns);
 
   const { shipmentMethods, pricedLocations } = shipmentMethodsAndLocations || {
     shipmentMethods: [],
@@ -60,28 +54,14 @@ export function SelectShipmentMethod({
     }
   });
 
-  // Helper function to check if a shipment method is eligible for free shipping
-  const isShipmentMethodFreeShippingEligible = (shipmentMethodId: string) => {
-    if (
-      !freeShipping.isEligible ||
-      !freeShippingCampaign?.FreeShippingCampaign
-    ) {
-      return false;
-    }
+  // Check if a shipment method is eligible for free shipping
+  const isShipmentMethodFreeShippingEligible = (shipmentMethodId: string) =>
+    freeShipping.isEligible &&
+    (freeShipping.eligibleShipmentMethodIds?.includes(shipmentMethodId) ?? false);
 
-    return freeShippingCampaign.FreeShippingCampaign.shipmentMethods?.some(
-      (method) => method.id === shipmentMethodId
-    );
-  };
-
-  // Helper function to check if a parcel location is eligible for free shipping
+  // Check if a parcel location is eligible for free shipping
   const isParcelLocationFreeShippingEligible = (serviceId: string) => {
-    if (
-      !freeShipping.isEligible ||
-      !freeShippingCampaign?.FreeShippingCampaign
-    ) {
-      return false;
-    }
+    if (!freeShipping.isEligible) return false;
 
     // Find the shipment method that matches this serviceId
     const matchingShipmentMethod = parcelLockerShipments.find(
@@ -90,9 +70,7 @@ export function SelectShipmentMethod({
 
     if (!matchingShipmentMethod) return false;
 
-    return freeShippingCampaign.FreeShippingCampaign.shipmentMethods?.some(
-      (method) => method.id === matchingShipmentMethod.id
-    );
+    return freeShipping.eligibleShipmentMethodIds?.includes(matchingShipmentMethod.id) ?? false;
   };
 
   // Helper function to format distance

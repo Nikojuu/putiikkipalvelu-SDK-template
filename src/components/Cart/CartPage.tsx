@@ -2,7 +2,6 @@
 
 import Subtitle from "@/components/subtitle";
 import { useCart } from "@/hooks/use-cart";
-import { useCampaignCart } from "@/hooks/use-campaign-cart";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,7 +9,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { CampaignAddedCartItems } from "./CampaignAddedCartItems";
-import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
+import {
+  calculateCartWithCampaigns,
+  type Campaign,
+} from "@putiikkipalvelu/storefront-sdk";
 
 export type ShipmentMethods = {
   id: string;
@@ -27,21 +29,19 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const router = useRouter();
   const cart = useCart();
 
-  const freeShippingCampaign = campaigns.find(
-    (campaign) => campaign.type === "FREE_SHIPPING"
-  );
-  const buyXPayYCampaign = campaigns.find(
-    (campaign) => campaign.type === "BUY_X_PAY_Y"
-  );
-
-  // Use the campaign cart hook for calculations
+  // Calculate cart with campaigns applied
   const {
     calculatedItems,
     cartTotal,
     originalTotal,
     totalSavings,
     freeShipping,
-  } = useCampaignCart(cart.items, buyXPayYCampaign, freeShippingCampaign);
+  } = calculateCartWithCampaigns(cart.items, campaigns);
+
+  // Find Buy X Pay Y campaign for CampaignAddedCartItems component
+  const buyXPayYCampaign = campaigns.find(
+    (campaign) => campaign.type === "BUY_X_PAY_Y" && campaign.isActive
+  );
 
   // Clear validation error when cart items change
   useEffect(() => {
@@ -237,7 +237,7 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
                         Alkuperäinen hinta
                       </span>
                       <span className="text-base font-secondary text-charcoal/60">
-                        {`${originalTotal.toFixed(2)} €`}
+                        {`${(originalTotal / 100).toFixed(2)} €`}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -245,14 +245,14 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
                         Kampanja säästö
                       </span>
                       <span className="text-base font-secondary text-deep-burgundy font-medium">
-                        {`-${totalSavings.toFixed(2)} €`}
+                        {`-${(totalSavings / 100).toFixed(2)} €`}
                       </span>
                     </div>
                   </div>
                 )}
 
                 {/* Free shipping status */}
-                {freeShippingCampaign && (
+                {freeShipping.campaignName && (
                   <div className="py-4 border-b border-rose-gold/15">
                     <div className="relative p-4 text-center">
                       <div className="absolute inset-0 border border-rose-gold/20 pointer-events-none" />
@@ -271,7 +271,7 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
                           <p className="text-base font-secondary text-charcoal/70">
                             Lisää tuotteita{" "}
                             <span className="text-rose-gold font-medium">
-                              {freeShipping.remainingAmount.toFixed(2)} €
+                              {(freeShipping.remainingAmount / 100).toFixed(2)} €
                             </span>{" "}
                             arvosta
                           </p>
@@ -299,7 +299,7 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
                     Yhteensä
                   </span>
                   <span className="text-lg text-charcoal ">
-                    {`${cartTotal.toFixed(2)} €`}
+                    {`${(cartTotal / 100).toFixed(2)} €`}
                   </span>
                 </div>
 
@@ -307,7 +307,7 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
                 {totalSavings > 0 && (
                   <div className="text-center pt-2">
                     <span className="inline-block text-sm font-secondary text-deep-burgundy bg-deep-burgundy/10 px-4 py-2">
-                      Säästät {totalSavings.toFixed(2)} € kampanjalla!
+                      Säästät {(totalSavings / 100).toFixed(2)} € kampanjalla!
                     </span>
                   </div>
                 )}

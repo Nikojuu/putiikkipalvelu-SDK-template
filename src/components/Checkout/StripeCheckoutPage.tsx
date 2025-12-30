@@ -34,14 +34,6 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
   const router = useRouter();
 
-  const freeShippingCampaign = campaigns.find(
-    (campaign) => campaign.type === "FREE_SHIPPING"
-  );
-
-  const buyXPayYCampaign = campaigns.find(
-    (campaign) => campaign.type === "BUY_X_PAY_Y"
-  );
-
   const steps = [
     { number: 1, title: "Asiakastiedot" },
     { number: 2, title: "Toimitustapa" },
@@ -141,8 +133,7 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
             <SelectShipmentMethod
               shipmentMethodsAndLocations={shipmentMethodsAndLocations}
               setChosenShipmentMethod={setChosenShipmentMethod}
-              freeShippingCampaign={freeShippingCampaign}
-              buyXPayYCampaign={buyXPayYCampaign}
+              campaigns={campaigns}
             />
           </div>
           <div className="mt-12 flex justify-between items-center mx-auto max-w-2xl gap-4">
