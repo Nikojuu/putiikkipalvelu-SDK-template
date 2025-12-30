@@ -1,55 +1,61 @@
 "use server";
 
-import { CartItem } from "@/hooks/use-cart";
 import { cookies } from "next/headers";
-
-const API_URL = process.env.NEXT_PUBLIC_STOREFRONT_API_URL;
-const API_KEY = process.env.STOREFRONT_API_KEY;
+import { storefront } from "@/lib/storefront";
+import type {
+  CartItem,
+  CartResponse,
+  CartValidationResponse,
+} from "@putiikkipalvelu/storefront-sdk";
 
 /**
- * Get headers for cart API requests
+ * Get cart session options from cookies
  */
-async function getCartHeaders() {
+async function getCartSessionOptions() {
   const cookieStore = await cookies();
   const cartId = cookieStore.get("cart-id")?.value;
   const sessionId = cookieStore.get("session-id")?.value;
 
-  return {
-    "x-api-key": API_KEY || "",
-    "Content-Type": "application/json",
-    ...(cartId && { "x-cart-id": cartId }),
-    ...(sessionId && { "x-session-id": sessionId }),
-  };
+  return { cartId, sessionId };
 }
 
 /**
- * Fetch cart from backend
+ * Store cartId in cookie for guest users
  */
-export async function apiFetchCart() {
-  const headers = await getCartHeaders();
-
-  const response = await fetch(`${API_URL}/api/storefront/v1/cart`, {
-    headers,
-  });
-
-  if (!response.ok) {
-    return { items: [], cartId: null };
-  }
-
-  const data = await response.json();
-
-  // Store cartId in cookie if returned (guest users)
-  if (data.cartId) {
+async function storeCartId(cartId: string | undefined) {
+  if (cartId) {
     const cookieStore = await cookies();
-    cookieStore.set("cart-id", data.cartId, {
+    cookieStore.set("cart-id", cartId, {
       maxAge: 60 * 60 * 24 * 10, // 10 days
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
     });
   }
+}
 
-  return data;
+/**
+ * Fetch cart from backend
+ */
+export async function apiFetchCart(): Promise<{
+  items: CartItem[];
+  cartId: string | null;
+}> {
+  const sessionOptions = await getCartSessionOptions();
+
+  try {
+    const data = await storefront.cart.get(sessionOptions);
+
+    // Store cartId in cookie if returned (guest users)
+    await storeCartId(data.cartId);
+
+    return {
+      items: data.items,
+      cartId: data.cartId ?? null,
+    };
+  } catch {
+    return { items: [], cartId: null };
+  }
 }
 
 /**
@@ -59,41 +65,18 @@ export async function apiAddToCart(
   productId: string,
   variationId?: string,
   quantity: number = 1
-) {
-  const cookieStore = await cookies();
-  const cartId = cookieStore.get("cart-id")?.value;
-  const headers = await getCartHeaders();
+): Promise<CartResponse> {
+  const sessionOptions = await getCartSessionOptions();
 
-  const response = await fetch(`${API_URL}/api/storefront/v1/cart`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      cartId,
-      productId,
-      variationId,
-      quantity,
-    }),
+  const data = await storefront.cart.addItem({
+    ...sessionOptions,
+    productId,
+    variationId,
+    quantity,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    const errorObj = new Error(error.error || "Failed to add to cart");
-    // Attach error code for specific handling
-    (errorObj as any).code = error.code;
-    throw errorObj;
-  }
-
-  const data = await response.json();
-
   // Store cartId in cookie if returned
-  if (data.cartId) {
-    cookieStore.set("cart-id", data.cartId, {
-      maxAge: 60 * 60 * 24 * 10,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
-  }
+  await storeCartId(data.cartId);
 
   return data;
 }
@@ -110,28 +93,17 @@ export async function apiUpdateCartQuantity(
   productId: string,
   delta: number,
   variationId?: string
-) {
-  const cookieStore = await cookies();
-  const cartId = cookieStore.get("cart-id")?.value;
-  const headers = await getCartHeaders();
+): Promise<CartResponse> {
+  const sessionOptions = await getCartSessionOptions();
 
-  const response = await fetch(`${API_URL}/api/storefront/v1/cart`, {
-    method: "PATCH",
-    headers,
-    body: JSON.stringify({
-      cartId,
-      productId,
-      variationId,
-      delta,
-    }),
+  const data = await storefront.cart.updateQuantity({
+    ...sessionOptions,
+    productId,
+    variationId,
+    delta,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to update cart");
-  }
-
-  return response.json();
+  return data;
 }
 
 /**
@@ -140,59 +112,30 @@ export async function apiUpdateCartQuantity(
 export async function apiRemoveFromCart(
   productId: string,
   variationId?: string
-) {
-  const cookieStore = await cookies();
-  const cartId = cookieStore.get("cart-id")?.value;
-  const headers = await getCartHeaders();
+): Promise<CartResponse> {
+  const sessionOptions = await getCartSessionOptions();
 
-  const response = await fetch(`${API_URL}/api/storefront/v1/cart`, {
-    method: "DELETE",
-    headers,
-    body: JSON.stringify({
-      cartId,
-      productId,
-      variationId,
-    }),
+  const data = await storefront.cart.removeItem({
+    ...sessionOptions,
+    productId,
+    variationId,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to remove from cart");
-  }
-
-  return response.json();
+  return data;
 }
-
-/**
- * Validate cart response type
- */
-export type ValidateCartResponse = {
-  items: CartItem[];
-  hasChanges: boolean;
-  changes: {
-    removedItems: number;
-    quantityAdjusted: number;
-    priceChanged: number;
-  };
-};
 
 /**
  * Validate cart before checkout
  * Checks product availability, stock, and prices
  * Auto-fixes issues and returns change metadata
  */
-export async function apiValidateCart(): Promise<ValidateCartResponse> {
-  const headers = await getCartHeaders();
+export async function apiValidateCart(): Promise<CartValidationResponse> {
+  const sessionOptions = await getCartSessionOptions();
 
-  const response = await fetch(`${API_URL}/api/storefront/v1/cart/validate`, {
-    method: "GET",
-    headers,
-  });
+  const data = await storefront.cart.validate(sessionOptions);
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to validate cart");
-  }
-
-  return response.json();
+  return data;
 }
+
+// Re-export types for backwards compatibility
+export type { CartValidationResponse };

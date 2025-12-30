@@ -3,6 +3,8 @@
 import type {
   ProductDetail,
   ProductVariation,
+  CartItem,
+  CartValidationResponse,
 } from "@putiikkipalvelu/storefront-sdk";
 import { create } from "zustand";
 import {
@@ -11,14 +13,10 @@ import {
   apiUpdateCartQuantity,
   apiRemoveFromCart,
   apiValidateCart,
-  ValidateCartResponse,
 } from "@/lib/actions/cartActions";
 
-export type CartItem = {
-  product: ProductDetail;
-  cartQuantity: number;
-  variation?: ProductVariation;
-};
+// Re-export CartItem for backwards compatibility
+export type { CartItem };
 
 type CartState = {
   items: CartItem[];
@@ -39,7 +37,7 @@ type CartState = {
 
   decrementQuantity: (productId: string, variationId?: string) => Promise<void>;
 
-  validateCart: () => Promise<ValidateCartResponse>;
+  validateCart: () => Promise<CartValidationResponse>;
 };
 
 export const useCart = create<CartState>()((set, get) => ({
