@@ -1,40 +1,16 @@
 import { NavbarLinks } from "./NavbarLinks";
 import Cart from "../Cart/Cart";
 import MobileLinks from "./MobileLinks";
-import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
-import { ApiCategory } from "@/app/utils/types";
+import type { Campaign, Category } from "@putiikkipalvelu/storefront-sdk";
 import CustomerDropdown from "./CustomerDropdown";
 import { getUser } from "@/lib/actions/authActions";
+import { storefront } from "@/lib/storefront";
 
 const getNavbarData = async (): Promise<{
-  categories: ApiCategory[];
+  categories: Category[];
 }> => {
   try {
-    // Fetch categories
-    const categoriesRes = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/categories`,
-      {
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-        },
-      }
-    );
-
-    // Handle categories response
-    let categories: ApiCategory[] = [];
-    if (categoriesRes.ok) {
-      categories = await categoriesRes.json();
-    } else {
-      let errorMessage = "Failed to fetch categories";
-      try {
-        const errorData = await categoriesRes.json();
-        errorMessage = errorData.error || errorMessage;
-      } catch (jsonErr) {
-        // Ignore JSON parse errors
-      }
-      console.error(errorMessage);
-    }
-
+    const categories = await storefront.categories.list();
     return { categories };
   } catch (error) {
     console.error("Error fetching navbar data:", error);

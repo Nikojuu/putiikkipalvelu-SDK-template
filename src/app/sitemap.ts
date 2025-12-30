@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { Category } from "./utils/types";
+import type { Category } from "@putiikkipalvelu/storefront-sdk";
 import { getStoreConfig, getSEOValue } from "@/lib/storeConfig";
 import { storefront } from "@/lib/storefront";
 
@@ -33,27 +33,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   };
 
-  // Fetch all categories
+  // Fetch all categories using SDK
   const fetchCategories = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/categories`,
-        {
-          headers: {
-            "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          },
-          next: {
-            revalidate: 13600,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const categories = await storefront.categories.list({
+        next: { revalidate: 13600 },
+      });
+      return categories;
     } catch (error) {
       console.error("Error fetching categories:", error);
       return [];

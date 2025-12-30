@@ -3,18 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import { ApiCategory } from "@/app/utils/types";
+import type { Category } from "@putiikkipalvelu/storefront-sdk";
 import { motion, AnimatePresence } from "framer-motion";
 
 const buildCategoryPath = (
-  category: ApiCategory,
+  category: Category,
   parentPath: string = ""
 ): string => {
   return parentPath ? `${parentPath}/${category.slug}` : category.slug;
 };
 
 const DesktopDropdown: React.FC<{
-  category: ApiCategory;
+  category: Category;
   parentPath?: string;
 }> = ({ category, parentPath = "" }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -66,7 +66,7 @@ const DesktopDropdown: React.FC<{
   );
 };
 
-export function NavbarLinks({ categories }: { categories: ApiCategory[] }) {
+export function NavbarLinks({ categories }: { categories: Category[] }) {
   const [isShopHovered, setIsShopHovered] = useState(false);
 
   const navLinkClasses =

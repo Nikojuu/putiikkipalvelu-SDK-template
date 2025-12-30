@@ -84,25 +84,7 @@ export interface PriceInfo {
   isOnSale: boolean;
 }
 
-export type ApiCategory = {
-  id: string;
-  name: string;
-  slug: string;
-  storeId: string;
-  parentId: string | null;
-  createdAt: string;
-  children: ApiCategory[];
-};
 
-export type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  storeId: string;
-  parentId: string | null;
-  createdAt: Date;
-  children: Category[];
-};
 
 export interface ShipmentMethods {
   id: string;

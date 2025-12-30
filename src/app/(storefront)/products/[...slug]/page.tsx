@@ -1,4 +1,4 @@
-import { Category } from "@/app/utils/types";
+
 import { PaginationComponent } from "@/components/Product/Pagination";
 import { SortOptions } from "@/components/Product/SortOptions";
 import { ProductCard } from "@/components/ProductCard";
@@ -11,6 +11,7 @@ import { getStoreConfig, getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
 import { storefront } from "@/lib/storefront";
 import type {
   ProductSortOption,
+  Category,
   Product,
 } from "@putiikkipalvelu/storefront-sdk";
 
@@ -19,9 +20,6 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string[] }>;
 }): Promise<Metadata> {
-  type CategoryMetadata = {
-    category: Category;
-  };
 
   try {
     const config = await getStoreConfig();
@@ -35,10 +33,11 @@ export async function generateMetadata({
 
     if (categorySlug && categorySlug !== "all-products") {
       try {
-        const categoryMetadata: CategoryMetadata =
-          await getCategoryMetadataFromApi(categorySlug); // Fetch category metadata from API
-
-        categoryName = categoryMetadata.category.name || "Tuotteet"; // Use fetched name or default
+        const decodedSlug = decodeURIComponent(categorySlug);
+        const { category } = await storefront.categories.getBySlug(decodedSlug, {
+          next: { revalidate: 86400 },
+        });
+        categoryName = category.name || "Tuotteet"; // Use fetched name or default
       } catch (error) {
         console.error("Error fetching category metadata for SEO:", error);
         // Fallback to default name if API call fails -  important to have fallback for SEO
@@ -78,28 +77,7 @@ export async function generateMetadata({
   }
 }
 
-const getCategoryMetadataFromApi = async (slug: string) => {
-  // Decode the slug to handle special characters like ä, ö, €, etc.
-  const decodedSlug = decodeURIComponent(slug);
 
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/categories/${encodeURIComponent(decodedSlug)}`,
-    {
-      headers: {
-        "x-api-key": process.env.STOREFRONT_API_KEY || "",
-      },
-      next: { revalidate: 86400 },
-    }
-  );
-
-  if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.error || "Failed to fetch category metadata");
-  }
-
-  const categoryData = await res.json();
-  return categoryData;
-};
 
 const ProductsPage = async ({
   params,

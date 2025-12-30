@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/sheet";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
-import { ApiCategory } from "@/app/utils/types";
+import type { Category } from "@putiikkipalvelu/storefront-sdk";
 
 const buildCategoryPath = (
-  category: ApiCategory,
+  category: Category,
   parentPath: string = ""
 ): string => {
   return parentPath ? `${parentPath}/${category.slug}` : category.slug;
@@ -35,7 +35,7 @@ const MobileCategory = memo(
     depth,
     onLinkClick,
   }: {
-    category: ApiCategory;
+    category: Category;
     parentPath?: string;
     depth: number;
     onLinkClick: () => void;
@@ -112,7 +112,7 @@ const MobileCategory = memo(
 
 MobileCategory.displayName = "MobileCategory";
 
-const MobileLinks = memo(({ categories }: { categories: ApiCategory[] }) => {
+const MobileLinks = memo(({ categories }: { categories: Category[] }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
 
