@@ -1,12 +1,22 @@
 "use server";
+
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { Resend } from "resend";
 import { STORE_NAME } from "@/app/utils/constants";
+import { storefront } from "@/lib/storefront";
+import {
+  ValidationError,
+  VerificationRequiredError,
+} from "@putiikkipalvelu/storefront-sdk";
 import type {
   Customer,
   CustomerWithVerification,
 } from "@putiikkipalvelu/storefront-sdk";
+
+// =============================================================================
+// Validation Schemas
+// =============================================================================
 
 const RegisterSchema = z.object({
   firstName: z.string().min(1, "Etunimi on pakollinen"),
@@ -15,89 +25,69 @@ const RegisterSchema = z.object({
   password: z.string().min(8, "Salasanan on oltava vähintään 8 merkkiä pitkä"),
 });
 
-export async function registerCustomer(formData: FormData) {
-  const validatedFields = RegisterSchema.safeParse({
-    firstName: formData.get("firstName"),
-    lastName: formData.get("lastName"),
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
+const LoginSchema = z.object({
+  email: z.string().email("Virheellinen sähköpostiosoite"),
+  password: z.string().min(1, "Salasana on pakollinen"),
+});
 
-  if (!validatedFields.success) {
-    return { error: validatedFields.error.flatten().fieldErrors };
-  }
+const EditProfileSchema = z.object({
+  firstName: z.string().min(1, "Etunimi on pakollinen"),
+  lastName: z.string().min(1, "Sukunimi on pakollinen"),
+  email: z.string().email("Virheellinen sähköpostiosoite"),
+});
 
-  const { firstName, lastName, email, password } = validatedFields.data;
+// =============================================================================
+// Helper Functions
+// =============================================================================
 
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/register`,
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          password,
-        }),
-      }
-    );
-
-    // Check if response is ok first
-    if (!response.ok) {
-      let errorMessage = "Registration failed. Please try again.";
-      try {
-        const errorData = (await response.json()) as { error?: string };
-        errorMessage = errorData.error || errorMessage;
-      } catch {
-        // If JSON parsing fails, use default error message
-      }
-      return { error: errorMessage };
-    }
-
-    const { customer, success } = await (response.json() as Promise<{
-      success?: boolean;
-      customer: CustomerWithVerification;
-    }>);
-
-    // Parse successful response
-    if (
-      !customer ||
-      !success ||
-      !customer.emailVerificationToken ||
-      !customer.emailVerificationExpiresAt
-    ) {
-      return { error: "Invalid response from server. Please try again." };
-    }
-
-    // send verification email
-    const emailResult = await sendVerificationEmail(customer);
-    if (!emailResult.success) {
-      console.error("Failed to send verification email:", emailResult.error);
-      // Don't fail registration, just log the error
-    }
-
-    const {
-      emailVerificationToken,
-      emailVerificationExpiresAt,
-      ...customerData
-    } = customer;
-
-    return {
-      success: true,
-      message:
-        "Registration successful! Please check your email to verify your account.",
-      customer: customerData,
-    };
-  } catch (error) {
-    console.error("Registration error:", error);
-    return { error: "An unexpected error occurred. Please try again." };
-  }
+async function getSessionId(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get("session-id")?.value;
 }
+
+async function setSessionCookie(sessionId: string, expiresAt: string) {
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: "session-id",
+    value: sessionId,
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    expires: new Date(expiresAt),
+  });
+}
+
+async function clearSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete("session-id");
+}
+
+async function setCartIdCookie(cartId: string) {
+  const cookieStore = await cookies();
+  cookieStore.set("cart-id", cartId, {
+    maxAge: 60 * 60 * 24 * 10, // 10 days
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+}
+
+async function clearCartIdCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete("cart-id");
+}
+
+async function getGuestCartId(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get("cart-id")?.value;
+}
+
+// =============================================================================
+// Email Functions (Store-specific, not in SDK)
+// =============================================================================
+
 async function sendVerificationEmail(customer: CustomerWithVerification) {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -131,10 +121,64 @@ async function sendVerificationEmail(customer: CustomerWithVerification) {
     };
   }
 }
-const LoginSchema = z.object({
-  email: z.string().email("Virheellinen sähköpostiosoite"),
-  password: z.string().min(1, "Salasana on pakollinen"),
-});
+
+// =============================================================================
+// Auth Actions (Using SDK)
+// =============================================================================
+
+export async function registerCustomer(formData: FormData) {
+  const validatedFields = RegisterSchema.safeParse({
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+
+  if (!validatedFields.success) {
+    return { error: validatedFields.error.flatten().fieldErrors };
+  }
+
+  const { firstName, lastName, email, password } = validatedFields.data;
+
+  try {
+    const response = await storefront.customer.register({
+      firstName,
+      lastName,
+      email,
+      password,
+    });
+
+    if (!response.success || !response.customer) {
+      return { error: "Invalid response from server. Please try again." };
+    }
+
+    // Send verification email (store-specific, not in SDK)
+    const emailResult = await sendVerificationEmail(
+      response.customer as CustomerWithVerification
+    );
+    if (!emailResult.success) {
+      console.error("Failed to send verification email:", emailResult.error);
+      // Don't fail registration, just log the error
+    }
+
+    // Remove sensitive verification token from response
+    const { emailVerificationToken, emailVerificationExpiresAt, ...customerData } =
+      response.customer as CustomerWithVerification;
+
+    return {
+      success: true,
+      message:
+        "Registration successful! Please check your email to verify your account.",
+      customer: customerData,
+    };
+  } catch (error) {
+    console.error("Registration error:", error);
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
+    return { error: "An unexpected error occurred. Please try again." };
+  }
+}
 
 export async function loginCustomer(formData: FormData) {
   const validatedFields = LoginSchema.safeParse({
@@ -149,158 +193,68 @@ export async function loginCustomer(formData: FormData) {
   const { email, password } = validatedFields.data;
 
   // Get guest cart-id from cookie (if user was guest before login)
-  const cookieStore = await cookies();
-  const guestCartId = cookieStore.get("cart-id")?.value;
+  const guestCartId = await getGuestCartId();
 
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/login`,
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          ...(guestCartId && { "x-cart-id": guestCartId }),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      }
-    );
+    const response = await storefront.customer.login(email, password, {
+      cartId: guestCartId,
+    });
 
-    // Check if response is ok first
-    if (!response.ok) {
-      let errorMessage = "Login failed. Please try again.";
-      try {
-        const errorData = (await response.json()) as {
-          requiresVerification?: boolean;
-          customerId?: string;
-          error?: string;
-        };
-
-        // Handle email verification required
-        if (errorData.requiresVerification) {
-          return {
-            requiresVerification: true,
-            customerId: errorData.customerId,
-            error: "Vahvista sähköpostiosoitteesi ennen sisäänkirjautumista.",
-          };
-        }
-
-        errorMessage = errorData.error || errorMessage;
-      } catch {
-        // JSON parsing failed
-      }
-      return { error: errorMessage };
-    }
-
-    // Parse successful response
-    let data;
-    try {
-      data = (await response.json()) as {
-        error?: string;
-        success?: boolean;
-        customer?: {
-          id: string;
-          firstName: string;
-          lastName: string;
-          email: string;
-          emailVerified: Date | null;
-          createdAt: string;
-        };
-        message?: string;
-        sessionId?: string; // Added sessionId
-        expiresAt?: string; // Added expiresAt
-      };
-
-      if (
-        !data.success ||
-        !data.customer ||
-        !data.sessionId ||
-        !data.expiresAt
-      ) {
-        return { error: "Invalid response from server. Please try again." };
-      }
-    } catch {
+    if (!response.success || !response.customer || !response.sessionId || !response.expiresAt) {
       return { error: "Invalid response from server. Please try again." };
     }
 
     // Set session cookie
-    (await cookies()).set({
-      name: "session-id",
-      value: data.sessionId,
-      path: "/",
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      expires: new Date(data.expiresAt),
-    });
+    await setSessionCookie(response.sessionId, response.expiresAt);
 
     // Delete guest cart-id cookie (backend already merged and deleted guest cart)
-    (await cookies()).delete("cart-id");
+    await clearCartIdCookie();
 
     return {
       success: true,
-      message: data.message || "Login successful!",
-      customer: data.customer,
+      message: response.message || "Login successful!",
+      customer: response.customer,
     };
   } catch (error) {
     console.error("Login error:", error);
+
+    // Handle email verification required
+    if (error instanceof VerificationRequiredError) {
+      return {
+        requiresVerification: true,
+        customerId: error.customerId,
+        error: "Vahvista sähköpostiosoitteesi ennen sisäänkirjautumista.",
+      };
+    }
+
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
+
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
 
 export async function getUser() {
-  const cookieStore = await cookies();
-  const sessionIdCookie = cookieStore.get("session-id");
+  const sessionId = await getSessionId();
 
-  if (!sessionIdCookie) {
+  if (!sessionId) {
     return { user: null, error: "No active session found." };
   }
 
-  const sessionId = sessionIdCookie.value;
-
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/get-user`,
-      {
-        method: "GET",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-          "x-session-id": sessionId, // Pass the session ID as a custom header
-        },
-      }
-    );
+    const response = await storefront.customer.getUser(sessionId);
 
-    if (!response.ok) {
-      let errorMessage = "Failed to fetch user data.";
-      try {
-        const errorData = (await response.json()) as { error?: string };
-        errorMessage = errorData.error || errorMessage;
-      } catch {
-        // If JSON parsing fails, use default error message
-      }
-      return { user: null, error: errorMessage };
-    }
-
-    const data = (await response.json()) as {
-      success?: boolean;
-      customer?: Customer;
-      error?: string;
-    };
-
-    if (!data.success || !data.customer) {
+    if (!response.success || !response.customer) {
       return {
         user: null,
-        error: data.error || "Invalid response from server.",
+        error: "Invalid response from server.",
       };
     }
 
     return {
       success: true,
-      user: data.customer,
+      user: response.customer,
     };
   } catch (error) {
     console.error("Get user error:", error);
@@ -312,58 +266,35 @@ export async function getUser() {
 }
 
 export async function logout() {
-  const cookieStore = await cookies();
-  const sessionIdCookie = cookieStore.get("session-id");
+  const sessionId = await getSessionId();
 
-  if (!sessionIdCookie) {
+  if (!sessionId) {
     return;
   }
 
-  const sessionId = sessionIdCookie.value;
-
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/logout`,
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-          "x-session-id": sessionId,
-        },
-      }
-    );
+    const response = await storefront.customer.logout(sessionId);
 
     // Clear session cookie
-    (await cookies()).delete("session-id");
+    await clearSessionCookie();
 
-    // Handle cart migration: if backend returns a new cartId, set it as cookie
-    if (response.ok) {
-      const data = await response.json();
-      if (data.cartId) {
-        (await cookies()).set("cart-id", data.cartId, {
-          maxAge: 60 * 60 * 24 * 10, // 10 days
-          httpOnly: true,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-        });
-      }
+    // If cart was migrated, store the new guest cart ID
+    if (response.cartId) {
+      await setCartIdCookie(response.cartId);
     }
 
     return;
   } catch (error) {
     console.error("Logout error:", error);
-    (await cookies()).delete("session-id");
+    // Still clear session on error
+    await clearSessionCookie();
     return;
   }
 }
 
-const EditProfileSchema = z.object({
-  firstName: z.string().min(1, "Etunimi on pakollinen"),
-  lastName: z.string().min(1, "Sukunimi on pakollinen"),
-  email: z.string().email("Virheellinen sähköpostiosoite"),
-});
+// =============================================================================
+// Profile Management Actions (Using SDK)
+// =============================================================================
 
 export async function editCustomerProfile(formData: FormData) {
   const validatedFields = EditProfileSchema.safeParse({
@@ -378,99 +309,44 @@ export async function editCustomerProfile(formData: FormData) {
 
   const { firstName, lastName, email } = validatedFields.data;
 
-  // Get session ID from cookies
-  const cookieStore = await cookies();
-  const sessionIdCookie = cookieStore.get("session-id");
-  if (!sessionIdCookie) {
+  const sessionId = await getSessionId();
+  if (!sessionId) {
     return { error: "No active session found. Please login again." };
   }
-  const sessionId = sessionIdCookie.value;
 
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/edit-user/`,
-      {
-        method: "PATCH",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-          "x-session-id": sessionId,
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      let errorMessage = "Failed to update profile. Please try again.";
-      try {
-        const errorData = (await response.json()) as { error?: string };
-        errorMessage = errorData.error || errorMessage;
-      } catch {
-        // If JSON parsing fails, use default error message
-      }
-      return { error: errorMessage };
-    }
-
-    const data = (await response.json()) as {
-      success?: boolean;
-      message?: string;
-      customer?: Customer;
-      error?: string;
-    };
+    const response = await storefront.customer.updateProfile(sessionId, {
+      firstName,
+      lastName,
+      email,
+    });
 
     return {
       success: true,
-      message: data.message || "Profile updated successfully!",
-      customer: data.customer,
+      message: response.message || "Profile updated successfully!",
+      customer: response.customer,
     };
   } catch (error) {
     console.error("Edit profile error:", error);
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
 
 export async function deleteCustomerAccount() {
-  // Get current user session
+  const sessionId = await getSessionId();
 
-  const cookieStore = await cookies();
-  const sessionIdCookie = cookieStore.get("session-id");
-
-  if (!sessionIdCookie) {
+  if (!sessionId) {
     return { error: "No active session found." };
   }
 
-  const sessionId = sessionIdCookie.value;
-
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/delete-user/`,
-      {
-        method: "DELETE",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-          "x-session-id": sessionId,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      let errorMessage = "Failed to delete account. Please try again.";
-      try {
-        const errorData = (await response.json()) as { error?: string };
-        errorMessage = errorData.error || errorMessage;
-      } catch {
-        // If JSON parsing fails, use default error message
-      }
-      return { error: errorMessage };
-    }
+    await storefront.customer.deleteAccount(sessionId);
 
     // Clear session cookie since account is deleted
-    (await cookies()).delete("session-id");
+    await clearSessionCookie();
 
     return {
       success: true,
@@ -478,171 +354,100 @@ export async function deleteCustomerAccount() {
     };
   } catch (error) {
     console.error("Delete account error:", error);
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
 
+// =============================================================================
+// Email Verification Actions (Using SDK)
+// =============================================================================
+
 export async function resendVerificationEmail(customerId: string) {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/resend-verification`,
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ customerId }),
-      }
-    );
+    const response = await storefront.customer.resendVerification(customerId);
 
-    if (!response.ok) {
-      const errorData = (await response.json()) as { error?: string };
-      return {
-        error: errorData.error || "Failed to resend verification email",
-      };
-    }
-
-    const data = (await response.json()) as {
-      success?: boolean;
-      customer?: CustomerWithVerification;
-    };
-
-    // Send the verification email using your existing logic
-    if (data.success && data.customer) {
-      const emailResult = await sendVerificationEmail(data.customer);
+    // Send the verification email using store-specific logic
+    if (response.success && response.customer) {
+      const emailResult = await sendVerificationEmail(
+        response.customer as CustomerWithVerification
+      );
       if (!emailResult.success) {
         return { error: "Failed to send verification email" };
       }
     }
 
-    return { success: true, message: "Email verified successfully!" };
+    return { success: true, message: "Verification email sent!" };
   } catch (error) {
     console.error("Email verification error:", error);
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
+
+// =============================================================================
+// Wishlist Actions (Using SDK)
+// =============================================================================
 
 export async function addToWishlist(
   productId: string,
   returnUrl: string,
   variationId?: string
 ) {
-  const cookieStore = await cookies();
-  const sessionIdCookie = cookieStore.get("session-id");
+  const sessionId = await getSessionId();
 
-  if (!sessionIdCookie) {
+  if (!sessionId) {
     // If not logged in, return a flag for the UI to handle redirect
     return { requiresLogin: true, returnUrl: returnUrl || null };
   }
 
-  const sessionId = sessionIdCookie.value;
-
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/wishlist`,
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-          "x-session-id": sessionId,
-        },
-        body: JSON.stringify({ productId, variationId }),
-      }
-    );
-
-    if (response.status === 401) {
-      // Session expired or invalid, ask UI to redirect to login
-      return { requiresLogin: true, returnUrl: returnUrl || null };
-    }
-
-    if (!response.ok) {
-      const errorData = (await response.json()) as { error?: string };
-      return { error: errorData.error || "Failed to add to wishlist" };
-    }
-
+    await storefront.customer.wishlist.add(sessionId, productId, variationId);
     return { success: true, message: "Added to wishlist" };
   } catch (error) {
     console.error("Add to wishlist error:", error);
+
+    // Check if session expired
+    if (error instanceof Error && error.message.includes("401")) {
+      return { requiresLogin: true, returnUrl: returnUrl || null };
+    }
+
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
 
-// export async function deleteFromWishlist(wishlistItemId: string) {
-//   const cookieStore = cookies();
-//   const sessionIdCookie = cookieStore.get("session-id");
-
-//   if (!sessionIdCookie) {
-//     return { error: "No active session found." };
-//   }
-
-//   const sessionId = sessionIdCookie.value;
-
-//   try {
-//     const response = await fetch(
-//       `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/wishlist/${wishlistItemId}`,
-//       {
-//         method: "DELETE",
-//         headers: {
-//           "x-api-key": process.env.STOREFRONT_API_KEY || "",
-//           "Content-Type": "application/json",
-//           "x-session-id": sessionId,
-//         },
-//       }
-//     );
-
-//     if (!response.ok) {
-//       const errorData = await response.json() as { error?: string };
-//       return { error: errorData.error || "Failed to delete from wishlist" };
-//     }
-
-//     return { success: true, message: "Deleted from wishlist" };
-//   } catch (error) {
-//     console.error("Delete from wishlist error:", error);
-//     return { error: "An unexpected error occurred. Please try again." };
-//   }
-// }
-
-// Server action for deleting wishlist items
 export async function deleteWishlistItem(
   productId: string,
   variationId?: string | null
 ) {
-  const cookieStore = await cookies();
-  const sessionIdCookie = cookieStore.get("session-id");
+  const sessionId = await getSessionId();
 
-  if (!sessionIdCookie) {
+  if (!sessionId) {
     return { error: "No active session found." };
   }
 
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/customer/wishlist`,
-      {
-        method: "DELETE",
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-          "x-session-id": sessionIdCookie.value,
-        },
-        body: JSON.stringify({
-          productId: productId,
-          variationId: variationId || null,
-        }),
-      }
+    await storefront.customer.wishlist.remove(
+      sessionId,
+      productId,
+      variationId || undefined
     );
-
-    if (response.ok) {
-      return { success: true, message: "Deleted from wishlist" };
-    }
-
-    if (!response.ok) {
-      const errorData = (await response.json()) as { error?: string };
-      return { error: errorData.error || "Failed to delete from wishlist" };
-    }
+    return { success: true, message: "Deleted from wishlist" };
   } catch (error) {
     console.error("Error removing from wishlist:", error);
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
+
+// Re-export types for backwards compatibility
+export type { Customer, CustomerWithVerification };

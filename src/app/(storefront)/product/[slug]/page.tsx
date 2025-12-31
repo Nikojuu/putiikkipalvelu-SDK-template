@@ -4,7 +4,8 @@ import { Metadata, ResolvingMetadata } from "next";
 import ProductSchema from "@/components/StructuredData/ProductSchema";
 import BreadcrumbSchema from "@/components/StructuredData/BreadcrumbSchema";
 import { STORE_NAME, STORE_DOMAIN } from "@/app/utils/constants";
-import { storefront, NotFoundError } from "@/lib/storefront";
+import { storefront } from "@/lib/storefront";
+import { NotFoundError } from "@putiikkipalvelu/storefront-sdk";
 
 const getProductDataFromApi = async (slug: string) => {
   try {

@@ -19,7 +19,6 @@ if (!API_KEY) {
  * ```ts
  * import { storefront } from '@/lib/storefront';
  *
- * // When resources are added (Phase 2):
  * const products = await storefront.products.latest({ take: 10 });
  * ```
  */
@@ -27,17 +26,3 @@ export const storefront = createStorefrontClient({
   apiKey: API_KEY,
   baseUrl: BASE_URL,
 });
-
-// Re-export types and errors for convenience
-export {
-  StorefrontError,
-  AuthError,
-  RateLimitError,
-  NotFoundError,
-  ValidationError,
-} from "@putiikkipalvelu/storefront-sdk";
-
-export type {
-  StorefrontClientConfig,
-  FetchOptions,
-} from "@putiikkipalvelu/storefront-sdk";
