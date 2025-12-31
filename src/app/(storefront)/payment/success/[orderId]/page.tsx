@@ -14,7 +14,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { getImageUrl } from "@/lib/utils";
-import { Order } from "@/app/utils/types";
+import { storefront } from "@/lib/storefront";
+import type { Order } from "@putiikkipalvelu/storefront-sdk";
 
 export const metadata: Metadata = {
   title: "Pupun Korvat | Kiitos tilauksestasi!",
@@ -29,25 +30,6 @@ export const metadata: Metadata = {
   },
 };
 
-const getData = async (orderId: string) => {
-  try {
-    const orderResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_STOREFRONT_API_URL}/api/storefront/v1/order/${orderId}`,
-      {
-        headers: {
-          "x-api-key": process.env.STOREFRONT_API_KEY || "",
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    return await orderResponse.json();
-  } catch (error) {
-    console.error("Error fetching order data:", error);
-    throw new Error("Failed to fetch order data.");
-  }
-};
-
 export default async function PaymentSuccessPage({
   params,
 }: {
@@ -55,7 +37,12 @@ export default async function PaymentSuccessPage({
 }) {
   const { orderId } = await params;
 
-  const order: Order = (await getData(orderId)) as Order;
+  let order: Order | null = null;
+  try {
+    order = await storefront.order.get(orderId);
+  } catch {
+    order = null;
+  }
   if (!order) {
     return (
       <section className="pt-8 md:pt-16 pb-16 bg-warm-white min-h-screen">

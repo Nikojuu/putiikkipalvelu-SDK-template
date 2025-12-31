@@ -1,4 +1,3 @@
-import { Order } from "@/app/utils/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { XCircle } from "lucide-react";
