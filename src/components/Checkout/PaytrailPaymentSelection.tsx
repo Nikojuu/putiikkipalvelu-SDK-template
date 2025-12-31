@@ -1,11 +1,10 @@
-import { PaytrailResponse } from "@/app/utils/paytrailTypes";
-import React from "react";
+import type { PaytrailCheckoutResponse } from "@putiikkipalvelu/storefront-sdk";
 import Image from "next/image";
 
 const PaymentSelection = ({
   paytrailData,
 }: {
-  paytrailData: PaytrailResponse;
+  paytrailData: PaytrailCheckoutResponse;
 }) => {
   const { groups, providers } = paytrailData;
 
@@ -31,10 +30,7 @@ const PaymentSelection = ({
       </div>
 
       {groups.map((group) => (
-        <div
-          key={group.id}
-          className="relative mb-10 bg-warm-white p-6 md:p-8"
-        >
+        <div key={group.id} className="relative mb-10 bg-warm-white p-6 md:p-8">
           {/* Border frame */}
           <div className="absolute inset-0 border border-rose-gold/15 pointer-events-none" />
 

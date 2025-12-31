@@ -55,5 +55,3 @@ export const SHOWCASE_CATEGORIES = [
     link: "/products/rannekorut",
   },
 ];
-
-export const PAYMENT_METHODS: PaymentMethod[] = ["paytrail"];

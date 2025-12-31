@@ -8,6 +8,7 @@ import { SelectShipmentMethod } from "@/components/Checkout/SelectShipmentMethod
 import type {
   Campaign,
   ShipmentMethodsWithLocationsResponse,
+  PaytrailCheckoutResponse,
 } from "@putiikkipalvelu/storefront-sdk";
 import { useToast } from "@/hooks/use-toast";
 import { XCircle } from "lucide-react";
@@ -16,7 +17,6 @@ import { getShipmentMethods } from "@/lib/actions/shipmentActions";
 import { CheckoutButton } from "../Cart/CheckoutButton";
 import { apiCreatePaytrailCheckoutSession } from "@/lib/actions/paytrailActions";
 import PaymentSelection from "./PaytrailPaymentSelection";
-import { PaytrailResponse } from "@/app/utils/paytrailTypes";
 
 export type ChosenShipmentType = {
   shipmentMethodId: string;
@@ -32,9 +32,8 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const [step, setStep] = useState(1);
   const [chosenShipmentMethod, setChosenShipmentMethod] =
     useState<ChosenShipmentType | null>(null);
-  const [paytrailData, setPaytrailData] = useState<PaytrailResponse | null>(
-    null
-  );
+  const [paytrailData, setPaytrailData] =
+    useState<PaytrailCheckoutResponse | null>(null);
   const steps = [
     { number: 1, title: "Asiakastiedot" },
     { number: 2, title: "Toimitustapa" },
