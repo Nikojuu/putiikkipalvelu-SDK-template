@@ -204,6 +204,7 @@ import {
   resendVerificationEmail,
 } from "@/lib/actions/authActions";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const LoginSchema = z.object({
   email: z.string().email("Virheellinen sähköpostiosoite"),
@@ -424,6 +425,16 @@ export default function LoginForm() {
                     </FormItem>
                   )}
                 />
+
+                {/* Forgot password link */}
+                <div className="text-right">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm font-secondary text-charcoal/70 hover:text-rose-gold transition-colors"
+                  >
+                    Unohditko salasanasi?
+                  </Link>
+                </div>
 
                 {/* Decorative line before buttons */}
                 <div className="h-[1px] bg-gradient-to-r from-transparent via-rose-gold/30 to-transparent" />

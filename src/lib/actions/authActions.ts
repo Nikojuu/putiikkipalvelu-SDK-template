@@ -36,6 +36,23 @@ const EditProfileSchema = z.object({
   email: z.string().email("Virheellinen sähköpostiosoite"),
 });
 
+const ForgotPasswordSchema = z.object({
+  email: z.string().email("Virheellinen sähköpostiosoite"),
+});
+
+const ResetPasswordSchema = z
+  .object({
+    token: z.string().min(32, "Virheellinen palautuskoodi"),
+    password: z
+      .string()
+      .min(8, "Salasanan on oltava vähintään 8 merkkiä pitkä"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Salasanat eivät täsmää",
+    path: ["confirmPassword"],
+  });
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
@@ -121,6 +138,9 @@ async function sendVerificationEmail(customer: CustomerWithVerification) {
     };
   }
 }
+
+// Note: Password reset emails are now sent server-side by the API
+// for improved security (token never exposed to client)
 
 // =============================================================================
 // Auth Actions (Using SDK)
@@ -386,6 +406,70 @@ export async function resendVerificationEmail(customerId: string) {
       return { error: error.message };
     }
     return { error: "An unexpected error occurred. Please try again." };
+  }
+}
+
+// =============================================================================
+// Password Reset Actions (Using SDK)
+// =============================================================================
+
+export async function forgotPassword(formData: FormData) {
+  const validatedFields = ForgotPasswordSchema.safeParse({
+    email: formData.get("email"),
+  });
+
+  if (!validatedFields.success) {
+    return { error: validatedFields.error.flatten().fieldErrors };
+  }
+
+  const { email } = validatedFields.data;
+
+  try {
+    // API now handles email sending server-side (token never exposed to client)
+    const response = await storefront.customer.forgotPassword(email);
+
+    // Always return success message (don't reveal if email exists)
+    return {
+      success: true,
+      message: response.message,
+    };
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
+    return { error: "Odottamaton virhe. Yritä uudelleen." };
+  }
+}
+
+export async function resetPassword(formData: FormData) {
+  const validatedFields = ResetPasswordSchema.safeParse({
+    token: formData.get("token"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!validatedFields.success) {
+    return { error: validatedFields.error.flatten().fieldErrors };
+  }
+
+  const { token, password } = validatedFields.data;
+
+  try {
+    const response = await storefront.customer.resetPassword(token, password);
+
+    return {
+      success: true,
+      message:
+        response.message ||
+        "Salasana vaihdettu onnistuneesti! Voit nyt kirjautua sisään.",
+    };
+  } catch (error) {
+    console.error("Reset password error:", error);
+    if (error instanceof ValidationError) {
+      return { error: error.message };
+    }
+    return { error: "Virheellinen tai vanhentunut palautuskoodi. Pyydä uusi." };
   }
 }
 
