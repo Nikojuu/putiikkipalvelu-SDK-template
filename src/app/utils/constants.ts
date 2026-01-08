@@ -15,7 +15,6 @@ export const STORE_DOMAIN = "https://www.testikauppa.fi"; // Change to your actu
 export const EMAIL = "info@putiikkipalvelu.fi";
 
 // Branding
-export const LOGO_URL = "/logo.svg";
 export const OPEN_GRAPH_IMAGE = "/og-image.jpg"; // Default OpenGraph image (1200x630px recommended)
 export const TWITTER_IMAGE = "/twitter-image.jpg"; // Default Twitter card image
 

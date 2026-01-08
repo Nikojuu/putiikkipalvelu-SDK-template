@@ -112,7 +112,7 @@ const MobileCategory = memo(
 
 MobileCategory.displayName = "MobileCategory";
 
-const MobileLinks = memo(({ categories }: { categories: Category[] }) => {
+const MobileLinks = memo(({ categories, logoUrl }: { categories: Category[]; logoUrl: string }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
 
@@ -156,8 +156,8 @@ const MobileLinks = memo(({ categories }: { categories: Category[] }) => {
               onClick={handleLinkClick}
             >
               <Image
-                src="https://dsh3gv4ve2.ufs.sh/f/PRCJ5a0N1o4iZ21jgtkpBdQ56DKGgHuI8cM2XEZmqPvzU1fn"
-                alt="Pupun Korvat logo"
+                src={logoUrl}
+                alt="Logo"
                 width={64}
                 height={64}
                 className="w-14 h-14 transition-transform duration-300 group-hover:scale-105"

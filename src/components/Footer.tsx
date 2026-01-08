@@ -1,9 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { InstagramLogoIcon } from "@radix-ui/react-icons";
-import { LOGO_URL, STORE_NAME } from "@/app/utils/constants";
+import { STORE_NAME } from "@/app/utils/constants";
 
-export function Footer() {
+export function Footer({ logoUrl }: { logoUrl: string }) {
   return (
     <footer className="relative bg-charcoal overflow-hidden">
       {/* Top gradient line */}
@@ -27,7 +27,7 @@ export function Footer() {
             <Link href="/" className="group flex-shrink-0">
               <div className="relative">
                 <Image
-                  src={LOGO_URL}
+                  src={logoUrl}
                   alt={`${STORE_NAME} logo`}
                   width={80}
                   height={80}

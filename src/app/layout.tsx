@@ -93,6 +93,7 @@ export default async function RootLayout({
 }>) {
   const storeConfig = await getStoreConfig();
   const campaigns = storeConfig.campaigns;
+  const logoUrl = storeConfig.store.logoUrl || SEO_FALLBACKS.logoUrl;
 
   return (
     <html
@@ -106,11 +107,11 @@ export default async function RootLayout({
       </head>
 
       <body className="bg-warm-white">
-        <StickyNavbar campaigns={campaigns}>
-          <Navbar campaigns={campaigns} />
+        <StickyNavbar campaigns={campaigns} logoUrl={logoUrl}>
+          <Navbar campaigns={campaigns} logoUrl={logoUrl} />
         </StickyNavbar>
         <main className="min-h-[75vh] max-w-[3500px]">{children}</main>
-        <Footer />
+        <Footer logoUrl={logoUrl} />
 
         <Toaster />
       </body>

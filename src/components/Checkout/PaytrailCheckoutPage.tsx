@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import CustomerDataForm from "@/components/Checkout/CustomerDataForm";
+import { useCart } from "@/hooks/use-cart";
 import { CustomerData, customerDataSchema } from "@/lib/zodSchemas";
 import { SelectShipmentMethod } from "@/components/Checkout/SelectShipmentMethod";
 import type {
@@ -25,6 +26,7 @@ export type ChosenShipmentType = {
 
 const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const { toast } = useToast();
+  const { items: cartItems } = useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [shipmentMethodsAndLocations, setShipmentMethodsAndLocations] =
@@ -46,7 +48,8 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
       return;
     }
     try {
-      const response = await getShipmentMethods(data.postal_code);
+      // Pass cart items - SDK calculates weight for filtering
+      const response = await getShipmentMethods(data.postal_code, cartItems);
       setShipmentMethodsAndLocations(response);
 
       setStep(2);

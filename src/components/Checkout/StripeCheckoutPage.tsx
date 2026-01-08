@@ -26,6 +26,7 @@ export type ChosenShipmentType = {
 
 const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const { toast } = useToast();
+  const { items: cartItems } = useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [shipmentMethodsAndLocations, setShipmentMethodsAndLocations] =
@@ -48,9 +49,9 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
       return;
     }
     try {
-      const response = await getShipmentMethods(data.postal_code);
+      // Pass cart items - SDK calculates weight for filtering
+      const response = await getShipmentMethods(data.postal_code, cartItems);
       setShipmentMethodsAndLocations(response);
-      console.log("data", customerData);
 
       setStep(2);
     } catch (error) {

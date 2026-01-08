@@ -93,12 +93,6 @@ export default async function PaymentSuccessPage({
               Tilausnumero:{" "}
               <span className="font-semibold text-charcoal">#{order.orderNumber}</span>
             </p>
-            <p className="text-base md:text-lg">
-              Tilauksen tila:{" "}
-              <span className="font-semibold text-sage-green capitalize">
-                {order.status === "PAID" ? "Maksettu" : order.status}
-              </span>
-            </p>
           </div>
         </div>
 
@@ -307,7 +301,7 @@ export default async function PaymentSuccessPage({
                 <div className="h-[1px] bg-gradient-to-r from-transparent via-rose-gold/20 to-transparent my-2" />
 
                 <div className="flex justify-between items-center font-primary text-lg md:text-xl font-bold text-charcoal">
-                  <span>Maksettava yhteensä:</span>
+                  <span>Yhteensä:</span>
                   <span>{formatPrice(order.totalAmount)}</span>
                 </div>
               </div>

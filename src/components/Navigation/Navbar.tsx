@@ -18,7 +18,7 @@ const getNavbarData = async (): Promise<{
   }
 };
 
-const Navbar = async ({ campaigns }: { campaigns: Campaign[] }) => {
+const Navbar = async ({ campaigns, logoUrl }: { campaigns: Campaign[]; logoUrl: string }) => {
   const { categories } = await getNavbarData();
   const { user } = await getUser();
 
@@ -26,7 +26,7 @@ const Navbar = async ({ campaigns }: { campaigns: Campaign[] }) => {
     <>
       {/* Mobile menu button */}
       <div className="lg:mr-4">
-        <MobileLinks categories={categories} />
+        <MobileLinks categories={categories} logoUrl={logoUrl} />
       </div>
 
       {/* Desktop navigation links */}

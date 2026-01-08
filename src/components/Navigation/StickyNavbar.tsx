@@ -1,6 +1,5 @@
 "use client";
 
-import { LOGO_URL } from "@/app/utils/constants";
 import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,9 +9,11 @@ import { useState, useEffect } from "react";
 export default function StickyNavbar({
   children,
   campaigns,
+  logoUrl,
 }: {
   children: React.ReactNode;
   campaigns: Campaign[];
+  logoUrl: string;
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -74,11 +75,11 @@ export default function StickyNavbar({
       >
         <Link href="/" className="lg:mr-20 hidden md:block">
           <Image
-            src={LOGO_URL}
+            src={logoUrl}
             alt="logo"
-            width="80"
+            width={80}
+            height={80}
             sizes="80px"
-            height="80"
           />
         </Link>
         {children}
