@@ -1,29 +1,25 @@
 "use client";
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import {
-  calculateCartWithCampaigns,
-  type Campaign,
   type ShipmentMethodsWithLocationsResponse,
   type ShipmentMethod,
+  type PickupLocation,
 } from "@putiikkipalvelu/storefront-sdk";
 import { useState } from "react";
-import { useCart } from "@/hooks/use-cart";
 
 export function SelectShipmentMethod({
   shipmentMethodsAndLocations,
   setChosenShipmentMethod,
-  campaigns,
 }: {
   shipmentMethodsAndLocations: ShipmentMethodsWithLocationsResponse | null;
   setChosenShipmentMethod: (shipmentMethod: {
     shipmentMethodId: string;
     pickupId: string | null;
+    serviceId: string | null;
   }) => void;
-  campaigns: Campaign[];
 }) {
   const [selectedShipmentMethod, setSelectedShipmentMethod] =
     useState<unknown>(null);
@@ -32,44 +28,12 @@ export function SelectShipmentMethod({
   // Number of parcel lockers to show initially
   const INITIAL_LOCATIONS_COUNT = 4;
 
-  // Get cart items and free shipping status
-  const items = useCart((state) => state.items);
-  const { freeShipping } = calculateCartWithCampaigns(items, campaigns);
-
-  const { shipmentMethods, pricedLocations } = shipmentMethodsAndLocations || {
-    shipmentMethods: [],
-    pricedLocations: [],
-  };
-
-  const homeDeliveryOrCustomShipments: ShipmentMethod[] = [];
-  const parcelLockerShipments: ShipmentMethod[] = [];
-
-  shipmentMethods.forEach((method) => {
-    if (method.shipitMethod?.onlyParchelLocker) {
-      parcelLockerShipments.push(method);
-    } else {
-      homeDeliveryOrCustomShipments.push(method);
-    }
-  });
-
-  // Check if a shipment method is eligible for free shipping
-  const isShipmentMethodFreeShippingEligible = (shipmentMethodId: string) =>
-    freeShipping.isEligible &&
-    (freeShipping.eligibleShipmentMethodIds?.includes(shipmentMethodId) ?? false);
-
-  // Check if a parcel location is eligible for free shipping
-  const isParcelLocationFreeShippingEligible = (serviceId: string) => {
-    if (!freeShipping.isEligible) return false;
-
-    // Find the shipment method that matches this serviceId
-    const matchingShipmentMethod = parcelLockerShipments.find(
-      (method) => method.shipitMethod?.serviceId === serviceId
-    );
-
-    if (!matchingShipmentMethod) return false;
-
-    return freeShipping.eligibleShipmentMethodIds?.includes(matchingShipmentMethod.id) ?? false;
-  };
+  // Use the simplified response structure
+  const { homeDeliveryMethods, pickupLocations } =
+    shipmentMethodsAndLocations || {
+      homeDeliveryMethods: [],
+      pickupLocations: [],
+    };
 
   // Helper function to format distance
   const formatDistance = (distanceInMeters: number) => {
@@ -80,29 +44,14 @@ export function SelectShipmentMethod({
     }
   };
 
-  // Helper function to format price with free shipping consideration
-  const formatPrice = (merchantPrice: number | null) => {
-    if (merchantPrice === null) return "Ilmainen";
-    return `${(merchantPrice / 100).toFixed(2)}€`;
-  };
-
-  // Helper function to format shipment method price with free shipping consideration
+  // Helper function to format shipment method price
   const formatShipmentMethodPrice = (shipment: ShipmentMethod) => {
-    if (isShipmentMethodFreeShippingEligible(shipment.id)) {
-      return "Ilmainen";
-    }
     return `${(shipment.price / 100).toFixed(2)}€`;
   };
 
-  // Helper function to format parcel location price with free shipping consideration
-  const formatParcelLocationPrice = (location: {
-    merchantPrice: number | null;
-    serviceId: string;
-  }) => {
-    if (isParcelLocationFreeShippingEligible(location.serviceId)) {
-      return "Ilmainen";
-    }
-    return formatPrice(location.merchantPrice);
+  // Helper function to format pickup location price
+  const formatPickupLocationPrice = (location: PickupLocation) => {
+    return `${(location.price / 100).toFixed(2)}€`;
   };
 
   const handleShipmentMethodChange = (value: string) => {
@@ -111,32 +60,19 @@ export function SelectShipmentMethod({
     // Parse the JSON string back into an object
     const data = JSON.parse(value);
 
-    if (data.type === "locker") {
-      const { lockerId, serviceId } = data;
-
-      // Find the shipment method that corresponds to the selected locker's service
-      const shipmentMethod = parcelLockerShipments.find(
-        (method) => method.shipitMethod?.serviceId === serviceId
-      );
-
-      if (shipmentMethod) {
-        const shipmentMethodId = shipmentMethod.id;
-        setChosenShipmentMethod({
-          shipmentMethodId: shipmentMethodId,
-          pickupId: lockerId,
-        });
-      } else {
-        console.error(
-          "Could not find a matching shipment method for serviceId:",
-          serviceId
-        );
-      }
-    } else if (data.type === "method") {
-      // Handle regular shipment methods if needed
-      const { methodId } = data;
+    if (data.type === "pickup") {
+      // Pickup location - shipmentMethodId is already on the location
       setChosenShipmentMethod({
-        shipmentMethodId: methodId,
+        shipmentMethodId: data.shipmentMethodId,
+        pickupId: data.pickupId,
+        serviceId: data.serviceId,
+      });
+    } else if (data.type === "method") {
+      // Home delivery method
+      setChosenShipmentMethod({
+        shipmentMethodId: data.methodId,
         pickupId: null,
+        serviceId: null,
       });
     }
   };
@@ -163,8 +99,8 @@ export function SelectShipmentMethod({
         onValueChange={handleShipmentMethodChange}
         className="space-y-8"
       >
-        {/* Home Delivery / Custom Shipments Section */}
-        {homeDeliveryOrCustomShipments.length > 0 && (
+        {/* Home Delivery Section */}
+        {homeDeliveryMethods.length > 0 && (
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 bg-rose-gold/60 diamond-shape" />
@@ -174,7 +110,7 @@ export function SelectShipmentMethod({
               <div className="flex-1 h-[1px] bg-gradient-to-r from-rose-gold/30 to-transparent" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {homeDeliveryOrCustomShipments.map((shipment) => (
+              {homeDeliveryMethods.map((shipment) => (
                 <div
                   key={shipment.id}
                   className={`group relative bg-warm-white cursor-pointer transition-all duration-500 ${
@@ -188,53 +124,63 @@ export function SelectShipmentMethod({
                   }`}
                 >
                   {/* Border frame */}
-                  <div className={`absolute inset-0 border pointer-events-none transition-colors duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "method",
-                      methodId: shipment.id,
-                    })
-                      ? "border-rose-gold/40"
-                      : "border-rose-gold/10 group-hover:border-rose-gold/25"
-                  }`} />
+                  <div
+                    className={`absolute inset-0 border pointer-events-none transition-colors duration-500 ${
+                      selectedShipmentMethod ===
+                      JSON.stringify({
+                        type: "method",
+                        methodId: shipment.id,
+                      })
+                        ? "border-rose-gold/40"
+                        : "border-rose-gold/10 group-hover:border-rose-gold/25"
+                    }`}
+                  />
 
                   {/* Corner accents */}
-                  <div className={`absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "method",
-                      methodId: shipment.id,
-                    })
-                      ? "border-rose-gold/60 w-8 h-8"
-                      : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
-                  }`} />
-                  <div className={`absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "method",
-                      methodId: shipment.id,
-                    })
-                      ? "border-rose-gold/60 w-8 h-8"
-                      : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
-                  }`} />
-                  <div className={`absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "method",
-                      methodId: shipment.id,
-                    })
-                      ? "border-rose-gold/60 w-8 h-8"
-                      : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
-                  }`} />
-                  <div className={`absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "method",
-                      methodId: shipment.id,
-                    })
-                      ? "border-rose-gold/60 w-8 h-8"
-                      : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
-                  }`} />
+                  <div
+                    className={`absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 transition-all duration-500 ${
+                      selectedShipmentMethod ===
+                      JSON.stringify({
+                        type: "method",
+                        methodId: shipment.id,
+                      })
+                        ? "border-rose-gold/60 w-8 h-8"
+                        : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
+                    }`}
+                  />
+                  <div
+                    className={`absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 transition-all duration-500 ${
+                      selectedShipmentMethod ===
+                      JSON.stringify({
+                        type: "method",
+                        methodId: shipment.id,
+                      })
+                        ? "border-rose-gold/60 w-8 h-8"
+                        : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
+                    }`}
+                  />
+                  <div
+                    className={`absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 transition-all duration-500 ${
+                      selectedShipmentMethod ===
+                      JSON.stringify({
+                        type: "method",
+                        methodId: shipment.id,
+                      })
+                        ? "border-rose-gold/60 w-8 h-8"
+                        : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
+                    }`}
+                  />
+                  <div
+                    className={`absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 transition-all duration-500 ${
+                      selectedShipmentMethod ===
+                      JSON.stringify({
+                        type: "method",
+                        methodId: shipment.id,
+                      })
+                        ? "border-rose-gold/60 w-8 h-8"
+                        : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
+                    }`}
+                  />
 
                   <CardContent className="p-6 relative">
                     <div className="flex items-start space-x-4">
@@ -292,154 +238,139 @@ export function SelectShipmentMethod({
           </div>
         )}
 
-        {/* Parcel Locker Section */}
-        {pricedLocations.length > 0 && (
+        {/* Pickup Locations Section */}
+        {pickupLocations.length > 0 && (
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 bg-rose-gold/60 diamond-shape" />
               <h3 className="text-xl md:text-2xl font-primary text-charcoal">
-                Pakettiautomaatti
+                Noutopisteet
               </h3>
               <div className="flex-1 h-[1px] bg-gradient-to-r from-rose-gold/30 to-transparent" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {(showAllLocations
-                ? pricedLocations
-                : pricedLocations.slice(0, INITIAL_LOCATIONS_COUNT)
-              ).map((location) => (
-                <div
-                  key={location.id}
-                  className={`group relative bg-warm-white cursor-pointer transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "locker",
-                      lockerId: location.id,
-                      serviceId: location.serviceId,
-                    })
-                      ? "shadow-lg"
-                      : "hover:shadow-md"
-                  }`}
-                >
-                  {/* Border frame */}
-                  <div className={`absolute inset-0 border pointer-events-none transition-colors duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "locker",
-                      lockerId: location.id,
-                      serviceId: location.serviceId,
-                    })
-                      ? "border-rose-gold/40"
-                      : "border-rose-gold/10 group-hover:border-rose-gold/25"
-                  }`} />
+                ? pickupLocations
+                : pickupLocations.slice(0, INITIAL_LOCATIONS_COUNT)
+              ).map((location) => {
+                const radioValue = JSON.stringify({
+                  type: "pickup",
+                  shipmentMethodId: location.shipmentMethodId,
+                  pickupId: location.id,
+                  serviceId: location.serviceId,
+                });
 
-                  {/* Corner accents */}
-                  <div className={`absolute top-0 left-0 w-4 h-4 border-l border-t transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "locker",
-                      lockerId: location.id,
-                      serviceId: location.serviceId,
-                    })
-                      ? "border-rose-gold/60 w-6 h-6"
-                      : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
-                  }`} />
-                  <div className={`absolute top-0 right-0 w-4 h-4 border-r border-t transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "locker",
-                      lockerId: location.id,
-                      serviceId: location.serviceId,
-                    })
-                      ? "border-rose-gold/60 w-6 h-6"
-                      : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
-                  }`} />
-                  <div className={`absolute bottom-0 left-0 w-4 h-4 border-l border-b transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "locker",
-                      lockerId: location.id,
-                      serviceId: location.serviceId,
-                    })
-                      ? "border-rose-gold/60 w-6 h-6"
-                      : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
-                  }`} />
-                  <div className={`absolute bottom-0 right-0 w-4 h-4 border-r border-b transition-all duration-500 ${
-                    selectedShipmentMethod ===
-                    JSON.stringify({
-                      type: "locker",
-                      lockerId: location.id,
-                      serviceId: location.serviceId,
-                    })
-                      ? "border-rose-gold/60 w-6 h-6"
-                      : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
-                  }`} />
+                return (
+                  <div
+                    key={`${location.id}-${location.shipmentMethodId}`}
+                    className={`group relative bg-warm-white cursor-pointer transition-all duration-500 ${
+                      selectedShipmentMethod === radioValue
+                        ? "shadow-lg"
+                        : "hover:shadow-md"
+                    }`}
+                  >
+                    {/* Border frame */}
+                    <div
+                      className={`absolute inset-0 border pointer-events-none transition-colors duration-500 ${
+                        selectedShipmentMethod === radioValue
+                          ? "border-rose-gold/40"
+                          : "border-rose-gold/10 group-hover:border-rose-gold/25"
+                      }`}
+                    />
 
-                  <CardContent className="p-4 relative">
-                    <div className="flex items-start space-x-3">
-                      <RadioGroupItem
-                        value={JSON.stringify({
-                          type: "locker",
-                          lockerId: location.id,
-                          serviceId: location.serviceId,
-                        })}
-                        id={`location-${location.id}`}
-                        className="mt-1.5 flex-shrink-0"
-                      />
+                    {/* Corner accents */}
+                    <div
+                      className={`absolute top-0 left-0 w-4 h-4 border-l border-t transition-all duration-500 ${
+                        selectedShipmentMethod === radioValue
+                          ? "border-rose-gold/60 w-6 h-6"
+                          : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
+                      }`}
+                    />
+                    <div
+                      className={`absolute top-0 right-0 w-4 h-4 border-r border-t transition-all duration-500 ${
+                        selectedShipmentMethod === radioValue
+                          ? "border-rose-gold/60 w-6 h-6"
+                          : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
+                      }`}
+                    />
+                    <div
+                      className={`absolute bottom-0 left-0 w-4 h-4 border-l border-b transition-all duration-500 ${
+                        selectedShipmentMethod === radioValue
+                          ? "border-rose-gold/60 w-6 h-6"
+                          : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
+                      }`}
+                    />
+                    <div
+                      className={`absolute bottom-0 right-0 w-4 h-4 border-r border-b transition-all duration-500 ${
+                        selectedShipmentMethod === radioValue
+                          ? "border-rose-gold/60 w-6 h-6"
+                          : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
+                      }`}
+                    />
 
-                      <Label
-                        htmlFor={`location-${location.id}`}
-                        className="block cursor-pointer w-full min-w-0"
-                      >
-                        <div className="space-y-3">
-                          {/* Header with carrier logo and name */}
-                          <div className="flex items-center space-x-2 min-w-0 bg-cream/40 px-2 py-1 border border-rose-gold/10">
-                            {location.carrierLogo && (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img
-                                src={location.carrierLogo}
-                                alt={location.carrier}
-                                className="w-5 h-5 object-contain flex-shrink-0"
-                              />
-                            )}
-                            <span className="text-xs font-secondary font-medium text-charcoal/70 truncate">
-                              {location.carrier}
-                            </span>
+                    <CardContent className="p-4 relative">
+                      <div className="flex items-start space-x-3">
+                        <RadioGroupItem
+                          value={radioValue}
+                          id={`location-${location.id}-${location.shipmentMethodId}`}
+                          className="mt-1.5 flex-shrink-0"
+                        />
+
+                        <Label
+                          htmlFor={`location-${location.id}-${location.shipmentMethodId}`}
+                          className="block cursor-pointer w-full min-w-0"
+                        >
+                          <div className="space-y-3">
+                            {/* Header with carrier logo and name */}
+                            <div className="flex items-center space-x-2 min-w-0 bg-cream/40 px-2 py-1 border border-rose-gold/10">
+                              {location.carrierLogo && (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={location.carrierLogo}
+                                  alt={location.carrier}
+                                  className="w-5 h-5 object-contain flex-shrink-0"
+                                />
+                              )}
+                              <span className="text-xs font-secondary font-medium text-charcoal/70 truncate">
+                                {location.carrier}
+                              </span>
+                            </div>
+
+                            {/* Location name */}
+                            <h4 className="font-secondary font-medium text-sm leading-tight line-clamp-2 min-h-10 text-charcoal">
+                              {location.name}
+                            </h4>
+
+                            {/* Address */}
+                            <div className="text-xs font-secondary text-charcoal/60 space-y-1 bg-cream/30 p-2 border border-rose-gold/10">
+                              <p className="truncate font-medium">
+                                {location.address1}
+                              </p>
+                              <p className="truncate">
+                                {location.zipcode} {location.city}
+                              </p>
+                            </div>
+
+                            {/* Price and Distance */}
+                            <div className="flex justify-between items-center pt-1">
+                              <span className="font-primary text-base text-charcoal bg-rose-gold/10 px-2 py-1 border border-rose-gold/20">
+                                {formatPickupLocationPrice(location)}
+                              </span>
+                              <span className="text-charcoal/60 text-xs font-secondary font-medium bg-cream/40 px-2 py-1 border border-rose-gold/10">
+                                {formatDistance(location.distanceInMeters)}
+                              </span>
+                            </div>
                           </div>
-
-                          {/* Location name */}
-                          <h4 className="font-secondary font-medium text-sm leading-tight line-clamp-2 min-h-10 text-charcoal">
-                            {location.name}
-                          </h4>
-
-                          {/* Address */}
-                          <div className="text-xs font-secondary text-charcoal/60 space-y-1 bg-cream/30 p-2 border border-rose-gold/10">
-                            <p className="truncate font-medium">
-                              {location.address1}
-                            </p>
-                            <p className="truncate">
-                              {location.zipcode} {location.city}
-                            </p>
-                          </div>
-
-                          {/* Price and Distance */}
-                          <div className="flex justify-between items-center pt-1">
-                            <span className="font-primary text-base text-charcoal bg-rose-gold/10 px-2 py-1 border border-rose-gold/20">
-                              {formatParcelLocationPrice(location)}
-                            </span>
-                            <span className="text-charcoal/60 text-xs font-secondary font-medium bg-cream/40 px-2 py-1 border border-rose-gold/10">
-                              {formatDistance(location.distanceInMeters)}
-                            </span>
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-                  </CardContent>
-                </div>
-              ))}
+                        </Label>
+                      </div>
+                    </CardContent>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Show More/Less Button */}
-            {pricedLocations.length > INITIAL_LOCATIONS_COUNT && (
+            {pickupLocations.length > INITIAL_LOCATIONS_COUNT && (
               <div className="flex justify-center pt-4">
                 <button
                   type="button"
@@ -447,8 +378,8 @@ export function SelectShipmentMethod({
                   className="inline-flex items-center gap-3 px-8 py-3 border border-charcoal/30 text-charcoal font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:border-rose-gold hover:text-rose-gold"
                 >
                   {showAllLocations
-                    ? `Näytä vähemmän (${INITIAL_LOCATIONS_COUNT}/${pricedLocations.length})`
-                    : `Näytä lisää (${pricedLocations.length - INITIAL_LOCATIONS_COUNT} lisää)`}
+                    ? `Näytä vähemmän (${INITIAL_LOCATIONS_COUNT}/${pickupLocations.length})`
+                    : `Näytä lisää (${pickupLocations.length - INITIAL_LOCATIONS_COUNT} lisää)`}
                 </button>
               </div>
             )}

@@ -20,27 +20,9 @@ export default function StickyNavbar({
 
   const getCampaignEmoji = (type: string) => {
     switch (type) {
-      case "FREE_SHIPPING":
-        return "🚚";
       case "BUY_X_PAY_Y":
         return "💰";
-        // case "PERCENTAGE_DISCOUNT":
-        //   return "🏷️";
-        // case "FIXED_DISCOUNT":
-        //   return "💸";
-        // case "FLASH_SALE":
-        //   return "⚡";
-        // case "SEASONAL_SALE":
-        //   return "🎉";
-        // case "NEW_CUSTOMER":
-        //   return "👋";
-        // case "LOYALTY_REWARD":
-        //   return "🎁";
-        // case "BULK_DISCOUNT":
-        //   return "📦";
-        // case "HOLIDAY_SALE":
-        //   return "🎄";
-        // default:
+      default:
         return "🎯";
     }
   };

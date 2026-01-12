@@ -22,6 +22,7 @@ import PaymentSelection from "./PaytrailPaymentSelection";
 export type ChosenShipmentType = {
   shipmentMethodId: string;
   pickupId: string | null;
+  serviceId: string | null; // ServiceId from the selected pickup point (for multi-carrier methods)
 };
 
 const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
@@ -146,7 +147,6 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
               <SelectShipmentMethod
                 shipmentMethodsAndLocations={shipmentMethodsAndLocations}
                 setChosenShipmentMethod={setChosenShipmentMethod}
-                campaigns={campaigns}
               />
             </div>
             <div className="mt-12 flex justify-between items-center mx-auto max-w-2xl gap-4">

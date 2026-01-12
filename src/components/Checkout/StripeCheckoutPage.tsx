@@ -22,6 +22,7 @@ import { apiCreateStripeCheckoutSession } from "@/lib/actions/stripeActions";
 export type ChosenShipmentType = {
   shipmentMethodId: string;
   pickupId: string | null;
+  serviceId: string | null; // ServiceId from the selected pickup point (for multi-carrier methods)
 };
 
 const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
@@ -136,7 +137,6 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
             <SelectShipmentMethod
               shipmentMethodsAndLocations={shipmentMethodsAndLocations}
               setChosenShipmentMethod={setChosenShipmentMethod}
-              campaigns={campaigns}
             />
           </div>
           <div className="mt-12 flex justify-between items-center mx-auto max-w-2xl gap-4">

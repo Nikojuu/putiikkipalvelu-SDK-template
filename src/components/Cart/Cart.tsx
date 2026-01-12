@@ -29,13 +29,8 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
   const initializedRef = useRef<boolean>(false);
 
   // Calculate cart with campaigns applied
-  const {
-    calculatedItems,
-    cartTotal,
-    originalTotal,
-    totalSavings,
-    freeShipping,
-  } = calculateCartWithCampaigns(items, campaigns);
+  const { calculatedItems, cartTotal, originalTotal, totalSavings } =
+    calculateCartWithCampaigns(items, campaigns);
 
   // Handle hydration mismatch for client-only content
   useEffect(() => {
@@ -123,27 +118,6 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
                     <span>Kampanja säästö</span>
                     <span>-{(totalSavings / 100).toFixed(2)} €</span>
                   </div>
-                </div>
-              )}
-
-              {/* Free shipping status */}
-              {freeShipping.campaignName && (
-                <div className="relative p-3 text-center">
-                  <div className="absolute inset-0 border border-rose-gold/20 pointer-events-none" />
-                  {freeShipping.isEligible ? (
-                    <p className="text-xs font-secondary text-charcoal/80">
-                      <span className="text-rose-gold">✓</span> Ilmainen
-                      toimitus!
-                    </p>
-                  ) : (
-                    <p className="text-xs font-secondary text-charcoal/60">
-                      Lisää{" "}
-                      <span className="text-rose-gold font-medium">
-                        {(freeShipping.remainingAmount / 100).toFixed(2)} €
-                      </span>{" "}
-                      ilmaiseen toimitukseen
-                    </p>
-                  )}
                 </div>
               )}
 
