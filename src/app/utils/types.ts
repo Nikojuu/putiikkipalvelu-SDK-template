@@ -1,7 +1,7 @@
 // =============================================================================
 // Types from SDK (use imports instead of duplicating):
 // =============================================================================
-// Shipping: ShipmentMethod, ShipitShippingMethod, PickupLocation, ShipmentMethodsResponse, etc.
+// Shipping: ShipmentMethodsResponse, HomeDeliveryOption, PickupPointOption, OpeningHours
 // Customer: Customer (use instead of User), CustomerOrder, OrderLineItem, etc.
 // Pricing: PriceInfo
 // =============================================================================

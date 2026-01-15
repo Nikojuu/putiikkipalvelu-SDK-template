@@ -302,7 +302,7 @@ export default async function PaymentSuccessPage({
 
                 <div className="flex justify-between items-center font-primary text-lg md:text-xl font-bold text-charcoal">
                   <span>Yhteensä:</span>
-                  <span>{formatPrice(order.totalAmount)}</span>
+                  <span>{formatPrice(order.totalAmount + (order.orderShipmentMethod?.price || 0))}</span>
                 </div>
               </div>
             </div>

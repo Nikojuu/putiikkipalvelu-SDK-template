@@ -5,43 +5,44 @@ import { useState } from "react";
 import CustomerDataForm from "@/components/Checkout/CustomerDataForm";
 import { useCart } from "@/hooks/use-cart";
 import { CustomerData, customerDataSchema } from "@/lib/zodSchemas";
-import { SelectShipmentMethod } from "@/components/Checkout/SelectShipmentMethod";
-import type {
-  Campaign,
-  ShipmentMethodsWithLocationsResponse,
-  PaytrailCheckoutResponse,
+import {
+  SelectShipmentMethod,
+  type ShipmentSelection,
+} from "@/components/Checkout/SelectShipmentMethod";
+import {
+  calculateCartWithCampaigns,
+  type Campaign,
+  type ShipmentMethodsResponse,
+  type PaytrailCheckoutResponse,
 } from "@putiikkipalvelu/storefront-sdk";
 import { useToast } from "@/hooks/use-toast";
 import { XCircle } from "lucide-react";
 import { CheckoutSteps } from "@/components/Checkout/CheckoutSteps";
-import { getShipmentMethods } from "@/lib/actions/shipmentActions";
+import { getShippingOptions } from "@/lib/actions/shipmentActions";
 import { CheckoutButton } from "../Cart/CheckoutButton";
 import { apiCreatePaytrailCheckoutSession } from "@/lib/actions/paytrailActions";
 import PaymentSelection from "./PaytrailPaymentSelection";
 
-export type ChosenShipmentType = {
-  shipmentMethodId: string;
-  pickupId: string | null;
-  serviceId: string | null; // ServiceId from the selected pickup point (for multi-carrier methods)
-};
-
 const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const { toast } = useToast();
   const { items: cartItems } = useCart();
+  const { cartTotal } = calculateCartWithCampaigns(cartItems, campaigns);
   const [isLoading, setIsLoading] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
-  const [shipmentMethodsAndLocations, setShipmentMethodsAndLocations] =
-    useState<ShipmentMethodsWithLocationsResponse | null>(null);
+  const [shippingOptions, setShippingOptions] =
+    useState<ShipmentMethodsResponse | null>(null);
   const [step, setStep] = useState(1);
-  const [chosenShipmentMethod, setChosenShipmentMethod] =
-    useState<ChosenShipmentType | null>(null);
+  const [selectedShipping, setSelectedShipping] =
+    useState<ShipmentSelection | null>(null);
   const [paytrailData, setPaytrailData] =
     useState<PaytrailCheckoutResponse | null>(null);
+
   const steps = [
     { number: 1, title: "Asiakastiedot" },
     { number: 2, title: "Toimitustapa" },
     { number: 3, title: "Maksutapa" },
   ];
+
   const handleCustomerDataSubmit = async (data: CustomerData) => {
     setIsLoading(true);
     setCustomerData(data);
@@ -49,10 +50,10 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
       return;
     }
     try {
-      // Pass cart items - SDK calculates weight for filtering
-      const response = await getShipmentMethods(data.postal_code, cartItems);
-      setShipmentMethodsAndLocations(response);
-
+      // Fetch shipping options for the customer's postal code
+      // Pass campaigns for accurate free shipping calculation
+      const response = await getShippingOptions(data.postal_code, cartItems, campaigns);
+      setShippingOptions(response);
       setStep(2);
     } catch (error) {
       toast({
@@ -67,7 +68,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           </div>
         ),
       });
-      console.error("Error fetching payment methods:", error);
+      console.error("Error fetching shipping options:", error);
     }
     setIsLoading(false);
   };
@@ -76,34 +77,38 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     const validationResult = customerDataSchema.safeParse(customerData);
     if (!validationResult.success) {
       console.error("Customer data validation failed:", validationResult.error);
-      // Optionally, you could show a toast here for validation errors
       return;
     }
 
     const validatedCustomerData = validationResult.data;
-    setIsLoading(true); // Start loading state
+    setIsLoading(true);
 
     try {
+      // Convert to the format expected by the checkout API
+      const chosenShipmentMethod = selectedShipping
+        ? {
+            shipmentMethodId: selectedShipping.shipmentMethodId,
+            pickupId: selectedShipping.pickupPointId,
+            serviceId: selectedShipping.serviceId,
+          }
+        : null;
+
       const paytrailData = await apiCreatePaytrailCheckoutSession(
         chosenShipmentMethod,
         validatedCustomerData
       );
 
-      // If the API call is successful, set the data and redirect
       setPaytrailData(paytrailData);
       setStep(3);
     } catch (error) {
       console.error("Checkout failed:", error);
 
-      // Handle the error and show a toast notification
       const errorMessage =
         error instanceof Error ? error.message : "Tuntematon virhe";
-      const title = "Virhe maksun käsittelyssä";
-      const description = errorMessage;
 
       toast({
-        title: title,
-        description: description,
+        title: "Virhe maksun käsittelyssä",
+        description: errorMessage,
         className:
           "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
         action: (
@@ -113,17 +118,18 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
         ),
       });
     } finally {
-      setIsLoading(false); // End loading state regardless of success or failure
+      setIsLoading(false);
     }
   };
+
   const handleGoBack = () => {
     if (step > 1) {
       const newStep = step - 1;
       setStep(newStep);
 
-      // Reset data based on the new step
       if (newStep === 1) {
-        // Reset data related to step 2
+        // Reset shipping selection when going back
+        setSelectedShipping(null);
       }
     }
   };
@@ -145,8 +151,9 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           <>
             <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
               <SelectShipmentMethod
-                shipmentMethodsAndLocations={shipmentMethodsAndLocations}
-                setChosenShipmentMethod={setChosenShipmentMethod}
+                shippingOptions={shippingOptions}
+                onSelect={setSelectedShipping}
+                cartTotal={cartTotal}
               />
             </div>
             <div className="mt-12 flex justify-between items-center mx-auto max-w-2xl gap-4">
@@ -170,11 +177,12 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
                 <span>Takaisin</span>
               </button>
               <form action={handlePaytrailCheckout}>
-                <CheckoutButton disabled={!chosenShipmentMethod} />
+                <CheckoutButton disabled={!selectedShipping} />
               </form>
             </div>
           </>
         )}
+
         {step === 3 && paytrailData && (
           <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
             <PaymentSelection paytrailData={paytrailData} />
