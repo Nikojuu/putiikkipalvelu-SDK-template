@@ -5,35 +5,35 @@ import { useState } from "react";
 import CustomerDataForm from "@/components/Checkout/CustomerDataForm";
 import { useCart } from "@/hooks/use-cart";
 import { CustomerData, customerDataSchema } from "@/lib/zodSchemas";
-import { SelectShipmentMethod } from "@/components/Checkout/SelectShipmentMethod";
-import type {
-  Campaign,
-  ShipmentMethodsWithLocationsResponse,
+import {
+  SelectShipmentMethod,
+  type ShipmentSelection,
+} from "@/components/Checkout/SelectShipmentMethod";
+import {
+  calculateCartWithCampaigns,
+  type Campaign,
+  type ShipmentMethodsResponse,
 } from "@putiikkipalvelu/storefront-sdk";
 import { useToast } from "@/hooks/use-toast";
 import { XCircle, Loader2 } from "lucide-react";
 import { CheckoutSteps } from "@/components/Checkout/CheckoutSteps";
 
-import { getShipmentMethods } from "@/lib/actions/shipmentActions";
+import { getShippingOptions } from "@/lib/actions/shipmentActions";
 
 import { useRouter } from "next/navigation";
 import { apiCreateStripeCheckoutSession } from "@/lib/actions/stripeActions";
 
-export type ChosenShipmentType = {
-  shipmentMethodId: string;
-  pickupId: string | null;
-};
-
 const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const { toast } = useToast();
   const { items: cartItems } = useCart();
+  const { cartTotal } = calculateCartWithCampaigns(cartItems, campaigns);
   const [isLoading, setIsLoading] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
-  const [shipmentMethodsAndLocations, setShipmentMethodsAndLocations] =
-    useState<ShipmentMethodsWithLocationsResponse | null>(null);
+  const [shippingOptions, setShippingOptions] =
+    useState<ShipmentMethodsResponse | null>(null);
   const [step, setStep] = useState(1);
-  const [chosenShipmentMethod, setChosenShipmentMethod] =
-    useState<ChosenShipmentType | null>(null);
+  const [selectedShipping, setSelectedShipping] =
+    useState<ShipmentSelection | null>(null);
 
   const router = useRouter();
 
@@ -42,6 +42,7 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     { number: 2, title: "Toimitustapa" },
     { number: 3, title: "Tilausvahvistus" },
   ];
+
   const handleCustomerDataSubmit = async (data: CustomerData) => {
     setIsLoading(true);
     setCustomerData(data);
@@ -49,10 +50,10 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
       return;
     }
     try {
-      // Pass cart items - SDK calculates weight for filtering
-      const response = await getShipmentMethods(data.postal_code, cartItems);
-      setShipmentMethodsAndLocations(response);
-
+      // Fetch shipping options for the customer's postal code
+      // Pass campaigns for accurate free shipping calculation
+      const response = await getShippingOptions(data.postal_code, cartItems, campaigns);
+      setShippingOptions(response);
       setStep(2);
     } catch (error) {
       toast({
@@ -68,7 +69,7 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           </div>
         ),
       });
-      console.error("Error fetching payment methods:", error);
+      console.error("Error fetching shipping options:", error);
     }
     setIsLoading(false);
   };
@@ -89,6 +90,15 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     try {
       // Use the validated data
       const validatedCustomerData = validationResult.data;
+
+      // Convert to the format expected by the checkout API
+      const chosenShipmentMethod = selectedShipping
+        ? {
+            shipmentMethodId: selectedShipping.shipmentMethodId,
+            pickupId: selectedShipping.pickupPointId,
+            serviceId: selectedShipping.serviceId,
+          }
+        : null;
 
       const res = await apiCreateStripeCheckoutSession(
         chosenShipmentMethod,
@@ -113,7 +123,8 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
       // Reset data based on the new step
       if (newStep === 1) {
-        // Reset data related to step 2
+        // Reset shipping selection when going back
+        setSelectedShipping(null);
       }
     }
   };
@@ -134,9 +145,9 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
         <>
           <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
             <SelectShipmentMethod
-              shipmentMethodsAndLocations={shipmentMethodsAndLocations}
-              setChosenShipmentMethod={setChosenShipmentMethod}
-              campaigns={campaigns}
+              shippingOptions={shippingOptions}
+              onSelect={setSelectedShipping}
+              cartTotal={cartTotal}
             />
           </div>
           <div className="mt-12 flex justify-between items-center mx-auto max-w-2xl gap-4">
@@ -162,7 +173,7 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
             <button
               type="button"
               onClick={handleStripeCheckout}
-              disabled={!chosenShipmentMethod || isLoading}
+              disabled={!selectedShipping || isLoading}
               className="group inline-flex items-center gap-3 px-8 py-4 bg-charcoal text-warm-white font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:bg-rose-gold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (

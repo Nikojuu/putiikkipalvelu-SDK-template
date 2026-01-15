@@ -1,7 +1,7 @@
 // =============================================================================
 // Types from SDK (use imports instead of duplicating):
 // =============================================================================
-// Shipping: ShipmentMethod, ShipitShippingMethod, PickupLocation, ShipmentMethodsResponse, etc.
+// Shipping: ShipmentMethodsResponse, HomeDeliveryOption, PickupPointOption, OpeningHours
 // Customer: Customer (use instead of User), CustomerOrder, OrderLineItem, etc.
 // Pricing: PriceInfo
 // =============================================================================
@@ -48,10 +48,10 @@ export interface PriceInfo {
 // ShipitShippingMethod kept for Order type (checkout/payment flow)
 export interface ShipitShippingMethod {
   id: string;
-  serviceId: string;
+  serviceIds: string[];
   name: string;
-  carrier: string;
-  logo: string;
+  carriers: string[];
+  logos: string[];
   pickUpIncluded: boolean;
   homeDelivery: boolean;
   worldwideDelivery: boolean;
@@ -67,8 +67,7 @@ export interface ShipitShippingMethod {
   width: number;
   price: number;
   weight: number;
-  pickupPoint: boolean;
-  onlyParchelLocker: boolean;
+  showPickupPoints: boolean;
 }
 
 export type OrderCustomerData = {
