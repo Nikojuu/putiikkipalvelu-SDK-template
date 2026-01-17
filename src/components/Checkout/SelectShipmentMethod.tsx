@@ -188,7 +188,7 @@ export function SelectShipmentMethod({
 
                 return (
                   <div
-                    key={`${point.id}-${point.shipmentMethodId}`}
+                    key={`${point.id}-${point.shipmentMethodId}-${point.serviceId}`}
                     className={`group relative bg-warm-white cursor-pointer transition-all duration-500 ${
                       isSelected ? "shadow-lg" : "hover:shadow-md"
                     }`}
