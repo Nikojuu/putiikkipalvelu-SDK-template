@@ -11,6 +11,16 @@ import type {
   RemoveDiscountResponse,
   Campaign,
 } from "@putiikkipalvelu/storefront-sdk";
+import { StorefrontError } from "@putiikkipalvelu/storefront-sdk";
+
+/**
+ * Result type for discount code operations that can fail
+ * In server actions, we return errors as part of the response
+ * instead of throwing (Next.js doesn't serialize error details in production)
+ */
+export type ApplyDiscountResult =
+  | { success: true; data: ApplyDiscountResponse }
+  | { success: false; error: string; code?: string };
 
 /**
  * Get cart session options from cookies
@@ -163,6 +173,9 @@ export async function apiValidateCart(
  * SDK checks campaign conflict instantly (no API call if conflict).
  * API validates code and stores in Redis.
  *
+ * Returns a result object instead of throwing errors to ensure
+ * error messages are properly serialized in Next.js production.
+ *
  * @param code - The discount code to apply
  * @param cartItems - Cart items for campaign conflict check
  * @param campaigns - Active campaigns for conflict check
@@ -171,17 +184,28 @@ export async function apiApplyDiscountCode(
   code: string,
   cartItems?: CartItem[],
   campaigns?: Campaign[]
-): Promise<ApplyDiscountResponse> {
+): Promise<ApplyDiscountResult> {
   const sessionOptions = await getCartSessionOptions();
 
-  const data = await storefront.discountCode.apply({
-    code,
-    ...sessionOptions,
-    cartItems,
-    campaigns,
-  });
+  try {
+    const data = await storefront.discountCode.apply({
+      code,
+      ...sessionOptions,
+      cartItems,
+      campaigns,
+    });
 
-  return data;
+    return { success: true, data };
+  } catch (error) {
+    // Extract error message and code from SDK errors
+    if (error instanceof StorefrontError) {
+      return { success: false, error: error.message, code: error.code };
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Tuntematon virhe" };
+  }
 }
 
 /**

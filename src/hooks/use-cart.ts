@@ -11,7 +11,6 @@ import type {
 import {
   getDiscountRemovalMessage,
   getDiscountApplyErrorMessage,
-  StorefrontError,
 } from "@putiikkipalvelu/storefront-sdk";
 import { create } from "zustand";
 import {
@@ -191,26 +190,23 @@ export const useCart = create<CartState>()((set, get) => ({
   // Apply discount code
   applyDiscount: async (code: string, campaigns?: Campaign[]) => {
     set({ discountLoading: true, discountError: null });
-    try {
-      const cartItems = get().items;
-      const data = await apiApplyDiscountCode(code, cartItems, campaigns);
+
+    const cartItems = get().items;
+    const result = await apiApplyDiscountCode(code, cartItems, campaigns);
+
+    if (result.success) {
       set({
         discountLoading: false,
         discount: {
-          code: data.discount.code,
-          discountType: data.discount.discountType,
-          discountValue: data.discount.discountValue,
+          code: result.data.discount.code,
+          discountType: result.data.discount.discountType,
+          discountValue: result.data.discount.discountValue,
         },
       });
       return { success: true };
-    } catch (error) {
-      // Use the specific error message from backend when available
-      const errorMessage =
-        error instanceof StorefrontError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : getDiscountApplyErrorMessage(undefined);
+    } else {
+      // Use the specific error message from the result
+      const errorMessage = result.error || getDiscountApplyErrorMessage(undefined);
       set({ discountLoading: false, discountError: errorMessage });
       return { success: false, error: errorMessage };
     }
