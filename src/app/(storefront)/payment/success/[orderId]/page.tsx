@@ -286,7 +286,7 @@ export default async function PaymentSuccessPage({
                   <span>Tuotteet:</span>
                   <span>
                     {formatPrice(
-                      order.OrderLineItems.reduce((sum, item) => sum + item.totalAmount, 0)
+                      order.OrderLineItems.reduce((sum, item) => sum + item.totalAmount, 0) - (order.discountAmount ?? 0)
                     )}
                   </span>
                 </div>
@@ -302,7 +302,7 @@ export default async function PaymentSuccessPage({
 
                 <div className="flex justify-between items-center font-primary text-lg md:text-xl font-bold text-charcoal">
                   <span>Yhteensä:</span>
-                  <span>{formatPrice(order.totalAmount + (order.orderShipmentMethod?.price || 0))}</span>
+                  <span>{formatPrice(order.totalAmount - (order.discountAmount ?? 0) + (order.orderShipmentMethod?.price || 0))}</span>
                 </div>
               </div>
             </div>

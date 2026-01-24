@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { CampaignAddedCartItems } from "./CampaignAddedCartItems";
+import { DiscountCodeInput } from "./DiscountCodeInput";
 import {
   calculateCartWithCampaigns,
   type Campaign,
@@ -22,6 +23,22 @@ export type ShipmentMethods = {
   cost: number;
 };
 
+/**
+ * Calculate discount amount from discount code
+ */
+function calculateDiscountAmount(
+  discount: { discountType: "PERCENTAGE" | "FIXED_AMOUNT"; discountValue: number } | null,
+  cartTotal: number
+): number {
+  if (!discount) return 0;
+
+  if (discount.discountType === "PERCENTAGE") {
+    return Math.round(cartTotal * (discount.discountValue / 100));
+  }
+  // FIXED_AMOUNT: discountValue is already in cents
+  return discount.discountValue;
+}
+
 const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -32,6 +49,9 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   // Calculate cart with campaigns applied
   const { calculatedItems, cartTotal, originalTotal, totalSavings } =
     calculateCartWithCampaigns(cart.items, campaigns);
+
+  // Calculate discount amount locally
+  const discountAmount = calculateDiscountAmount(cart.discount, cartTotal);
 
   // Find Buy X Pay Y campaign for CampaignAddedCartItems component
   const buyXPayYCampaign = campaigns.find(
@@ -52,7 +72,7 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
     try {
       setValidationError(null); // Clear previous errors
-      const validation = await cart.validateCart();
+      const validation = await cart.validateCart(campaigns);
 
       if (validation.hasChanges) {
         // Build toast message from changes
@@ -71,6 +91,9 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           messages.push(
             `${validation.changes.priceChanged} tuotteen hinta päivitettiin`
           );
+        }
+        if (validation.changes.discountCouponRemoved) {
+          messages.push("Alennuskoodi poistettiin kampanja-alennuksen vuoksi");
         }
 
         // Show warning toast
@@ -253,21 +276,61 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
                   </p>
                 </div>
 
+                {/* Discount code - only show when no campaign discount applies */}
+                {cart.items.length > 0 && totalSavings === 0 && (
+                  <div className="py-3 border-t border-rose-gold/15">
+                    <DiscountCodeInput campaigns={campaigns} />
+                  </div>
+                )}
+
+                {/* Discount code savings */}
+                {cart.discount && discountAmount > 0 && (
+                  <div className="space-y-3 py-3 border-t border-rose-gold/15">
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-secondary text-charcoal/60">
+                        Välisumma
+                      </span>
+                      <span className="text-base font-secondary text-charcoal/60">
+                        {`${(cartTotal / 100).toFixed(2)} €`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-secondary text-deep-burgundy">
+                        Alennus ({cart.discount.code})
+                      </span>
+                      <span className="text-base font-secondary text-deep-burgundy font-medium">
+                        {`-${(discountAmount / 100).toFixed(2)} €`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Total */}
                 <div className="flex items-center justify-between pt-4 border-t border-rose-gold/20">
                   <span className="font-secondary text-charcoal uppercase tracking-wider text-base">
                     Yhteensä
                   </span>
                   <span className="text-lg text-charcoal ">
-                    {`${(cartTotal / 100).toFixed(2)} €`}
+                    {cart.discount && discountAmount > 0
+                      ? `${((cartTotal - discountAmount) / 100).toFixed(2)} €`
+                      : `${(cartTotal / 100).toFixed(2)} €`}
                   </span>
                 </div>
 
-                {/* Savings badge */}
+                {/* Campaign savings badge */}
                 {totalSavings > 0 && (
                   <div className="text-center pt-2">
                     <span className="inline-block text-sm font-secondary text-deep-burgundy bg-deep-burgundy/10 px-4 py-2">
                       Säästät {(totalSavings / 100).toFixed(2)} € kampanjalla!
+                    </span>
+                  </div>
+                )}
+
+                {/* Discount code savings badge */}
+                {cart.discount && discountAmount > 0 && totalSavings === 0 && (
+                  <div className="text-center pt-2">
+                    <span className="inline-block text-sm font-secondary text-deep-burgundy bg-deep-burgundy/10 px-4 py-2">
+                      Säästät {(discountAmount / 100).toFixed(2)} € alennuskoodilla!
                     </span>
                   </div>
                 )}

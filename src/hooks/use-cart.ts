@@ -5,6 +5,13 @@ import type {
   ProductVariation,
   CartItem,
   CartValidationResponse,
+  Campaign,
+  AppliedDiscount,
+} from "@putiikkipalvelu/storefront-sdk";
+import {
+  getDiscountRemovalMessage,
+  getDiscountApplyErrorMessage,
+  StorefrontError,
 } from "@putiikkipalvelu/storefront-sdk";
 import { create } from "zustand";
 import {
@@ -13,6 +20,8 @@ import {
   apiUpdateCartQuantity,
   apiRemoveFromCart,
   apiValidateCart,
+  apiApplyDiscountCode,
+  apiRemoveDiscountCode,
 } from "@/lib/actions/cartActions";
 
 // Re-export CartItem for backwards compatibility
@@ -21,6 +30,9 @@ export type { CartItem };
 type CartState = {
   items: CartItem[];
   loading: boolean;
+  discount: AppliedDiscount | null;
+  discountLoading: boolean;
+  discountError: string | null;
 
   // Sync with Redis
   syncWithBackend: () => Promise<void>;
@@ -37,12 +49,22 @@ type CartState = {
 
   decrementQuantity: (productId: string, variationId?: string) => Promise<void>;
 
-  validateCart: () => Promise<CartValidationResponse>;
+  validateCart: (campaigns?: Campaign[]) => Promise<CartValidationResponse>;
+
+  // Discount code operations
+  applyDiscount: (
+    code: string,
+    campaigns?: Campaign[]
+  ) => Promise<{ success: boolean; error?: string }>;
+  removeDiscount: () => Promise<void>;
 };
 
 export const useCart = create<CartState>()((set, get) => ({
   items: [],
   loading: false,
+  discount: null,
+  discountLoading: false,
+  discountError: null,
 
   // Load cart from Redis
   syncWithBackend: async () => {
@@ -141,16 +163,71 @@ export const useCart = create<CartState>()((set, get) => ({
   },
 
   // Validate cart before checkout
-  validateCart: async () => {
+  validateCart: async (campaigns?: Campaign[]) => {
     set({ loading: true });
     try {
-      const data = await apiValidateCart();
+      const cartItems = get().items;
+      const data = await apiValidateCart(cartItems, campaigns);
+
+      // Update items from validation
       set({ items: data.items, loading: false });
+
+      // Handle discount removal
+      if (data.changes.discountCouponRemoved) {
+        set({
+          discount: null,
+          discountError: getDiscountRemovalMessage(data.changes.discountRemovalReason),
+        });
+      }
+
       return data;
     } catch (error) {
       console.error("Failed to validate cart:", error);
       set({ loading: false });
       throw error;
+    }
+  },
+
+  // Apply discount code
+  applyDiscount: async (code: string, campaigns?: Campaign[]) => {
+    set({ discountLoading: true, discountError: null });
+    try {
+      const cartItems = get().items;
+      const data = await apiApplyDiscountCode(code, cartItems, campaigns);
+      set({
+        discountLoading: false,
+        discount: {
+          code: data.discount.code,
+          discountType: data.discount.discountType,
+          discountValue: data.discount.discountValue,
+        },
+      });
+      return { success: true };
+    } catch (error) {
+      // Use the specific error message from backend when available
+      const errorMessage =
+        error instanceof StorefrontError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : getDiscountApplyErrorMessage(undefined);
+      set({ discountLoading: false, discountError: errorMessage });
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  // Remove discount code
+  removeDiscount: async () => {
+    set({ discountLoading: true, discountError: null });
+    try {
+      await apiRemoveDiscountCode();
+      set({
+        discountLoading: false,
+        discount: null,
+      });
+    } catch (error) {
+      console.error("Failed to remove discount:", error);
+      set({ discountLoading: false });
     }
   },
 }));

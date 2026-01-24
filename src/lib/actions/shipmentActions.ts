@@ -12,13 +12,15 @@ import type {
  * @param postalCode - Customer's postal code for location-based filtering
  * @param cartItems - Cart items for weight-based filtering (SDK calculates weight)
  * @param campaigns - Active campaigns for accurate cart total calculation (free shipping threshold)
+ * @param discountAmount - Discount code amount in cents (subtracted from cart total for free shipping threshold)
  */
 export async function getShippingOptions(
   postalCode: string,
   cartItems?: CartItem[],
-  campaigns?: Campaign[]
+  campaigns?: Campaign[],
+  discountAmount?: number
 ): Promise<ShipmentMethodsResponse> {
-  return storefront.shipping.getOptions(postalCode, { cartItems, campaigns });
+  return storefront.shipping.getOptions(postalCode, { cartItems, campaigns, discountAmount });
 }
 
 /**

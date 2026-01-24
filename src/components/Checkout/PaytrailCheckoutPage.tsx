@@ -25,8 +25,18 @@ import PaymentSelection from "./PaytrailPaymentSelection";
 
 const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const { toast } = useToast();
-  const { items: cartItems } = useCart();
+  const { items: cartItems, discount } = useCart();
   const { cartTotal } = calculateCartWithCampaigns(cartItems, campaigns);
+
+  // Calculate discount amount from discount code (if applied)
+  const discountAmount = discount
+    ? discount.discountType === "PERCENTAGE"
+      ? Math.round((cartTotal * discount.discountValue) / 100)
+      : discount.discountValue
+    : 0;
+
+  // Cart total after discount code (used for free shipping threshold)
+  const cartTotalAfterDiscount = cartTotal - discountAmount;
   const [isLoading, setIsLoading] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [shippingOptions, setShippingOptions] =
@@ -51,8 +61,8 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     }
     try {
       // Fetch shipping options for the customer's postal code
-      // Pass campaigns for accurate free shipping calculation
-      const response = await getShippingOptions(data.postal_code, cartItems, campaigns);
+      // Pass campaigns and discountAmount for accurate free shipping calculation
+      const response = await getShippingOptions(data.postal_code, cartItems, campaigns, discountAmount);
       setShippingOptions(response);
       setStep(2);
     } catch (error) {
@@ -153,7 +163,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
               <SelectShipmentMethod
                 shippingOptions={shippingOptions}
                 onSelect={setSelectedShipping}
-                cartTotal={cartTotal}
+                cartTotal={cartTotalAfterDiscount}
               />
             </div>
             <div className="mt-12 flex justify-between items-center mx-auto max-w-2xl gap-4">

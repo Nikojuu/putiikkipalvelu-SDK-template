@@ -6,6 +6,10 @@ import type {
   CartItem,
   CartResponse,
   CartValidationResponse,
+  ApplyDiscountResponse,
+  GetDiscountResponse,
+  RemoveDiscountResponse,
+  Campaign,
 } from "@putiikkipalvelu/storefront-sdk";
 
 /**
@@ -126,16 +130,86 @@ export async function apiRemoveFromCart(
 
 /**
  * Validate cart before checkout
- * Checks product availability, stock, and prices
- * Auto-fixes issues and returns change metadata
+ *
+ * Checks product availability, stock, prices.
+ * SDK calculates campaign conflicts and sends to backend.
+ * Backend removes discount if campaigns apply.
+ *
+ * @param cartItems - Current cart items
+ * @param campaigns - Active campaigns for conflict check
  */
-export async function apiValidateCart(): Promise<CartValidationResponse> {
+export async function apiValidateCart(
+  cartItems: CartItem[],
+  campaigns?: Campaign[]
+): Promise<CartValidationResponse> {
   const sessionOptions = await getCartSessionOptions();
 
-  const data = await storefront.cart.validate(sessionOptions);
+  const data = await storefront.cart.validate(
+    sessionOptions,
+    cartItems,
+    campaigns
+  );
+
+  return data;
+}
+
+// =============================================================================
+// Discount Code Actions
+// =============================================================================
+
+/**
+ * Apply a discount code to the cart
+ *
+ * SDK checks campaign conflict instantly (no API call if conflict).
+ * API validates code and stores in Redis.
+ *
+ * @param code - The discount code to apply
+ * @param cartItems - Cart items for campaign conflict check
+ * @param campaigns - Active campaigns for conflict check
+ */
+export async function apiApplyDiscountCode(
+  code: string,
+  cartItems?: CartItem[],
+  campaigns?: Campaign[]
+): Promise<ApplyDiscountResponse> {
+  const sessionOptions = await getCartSessionOptions();
+
+  const data = await storefront.discountCode.apply({
+    code,
+    ...sessionOptions,
+    cartItems,
+    campaigns,
+  });
+
+  return data;
+}
+
+/**
+ * Get the currently applied discount code
+ */
+export async function apiGetDiscountCode(): Promise<GetDiscountResponse> {
+  const sessionOptions = await getCartSessionOptions();
+
+  const data = await storefront.discountCode.get(sessionOptions);
+
+  return data;
+}
+
+/**
+ * Remove the currently applied discount code
+ */
+export async function apiRemoveDiscountCode(): Promise<RemoveDiscountResponse> {
+  const sessionOptions = await getCartSessionOptions();
+
+  const data = await storefront.discountCode.remove(sessionOptions);
 
   return data;
 }
 
 // Re-export types for backwards compatibility
-export type { CartValidationResponse };
+export type {
+  CartValidationResponse,
+  ApplyDiscountResponse,
+  GetDiscountResponse,
+  RemoveDiscountResponse,
+};
