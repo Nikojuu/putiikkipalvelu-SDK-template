@@ -26,6 +26,18 @@ import {
 // Re-export CartItem for backwards compatibility
 export type { CartItem };
 
+// =============================================================================
+// Debounce infrastructure for quantity updates
+// =============================================================================
+const getItemKey = (productId: string, variationId?: string) =>
+  variationId ? `${productId}:${variationId}` : productId;
+
+// Track pending deltas, timers, and base quantities per item
+const pendingDeltas = new Map<string, number>();
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const baseQuantities = new Map<string, number>(); // Quantity before pending changes (for rollback)
+const DEBOUNCE_MS = 300;
+
 type CartState = {
   items: CartItem[];
   loading: boolean;
@@ -122,60 +134,151 @@ export const useCart = create<CartState>()((set, get) => ({
     }
   },
 
-  // Increment quantity (optimistic update)
+  // Increment quantity (debounced)
   incrementQuantity: async (productId, variationId) => {
-    const previousItems = get().items;
+    const itemKey = getItemKey(productId, variationId);
+    const items = get().items;
+    const item = items.find(
+      (i) => i.product.id === productId && i.variation?.id === variationId
+    );
+    if (!item) return { success: false, error: "Item not found" };
 
-    // Optimistic: update UI immediately
+    // Save base quantity if this is the first pending change
+    if (!pendingDeltas.has(itemKey)) {
+      baseQuantities.set(itemKey, item.cartQuantity);
+    }
+
+    // Accumulate delta
+    const currentDelta = pendingDeltas.get(itemKey) || 0;
+    pendingDeltas.set(itemKey, currentDelta + 1);
+
+    // Optimistic update
     set({
-      items: previousItems.map((item) =>
-        item.product.id === productId && item.variation?.id === variationId
-          ? { ...item, cartQuantity: item.cartQuantity + 1 }
-          : item
+      items: items.map((i) =>
+        i.product.id === productId && i.variation?.id === variationId
+          ? { ...i, cartQuantity: i.cartQuantity + 1 }
+          : i
       ),
       error: null,
     });
 
-    const result = await apiUpdateCartQuantity(productId, +1, variationId);
+    // Clear existing timer and start new one
+    const existingTimer = debounceTimers.get(itemKey);
+    if (existingTimer) clearTimeout(existingTimer);
 
-    if (result.success) {
-      // Sync with server truth
-      set({ items: result.data.items });
-      return { success: true };
-    } else {
-      console.error("Failed to update quantity:", result.error);
-      // Rollback on error
-      set({ items: previousItems, error: result.error });
-      return { success: false, error: result.error, code: result.code };
-    }
+    return new Promise((resolve) => {
+      const timer = setTimeout(async () => {
+        const delta = pendingDeltas.get(itemKey) || 0;
+        const baseQty = baseQuantities.get(itemKey) || 0;
+
+        // Clear pending state
+        pendingDeltas.delete(itemKey);
+        debounceTimers.delete(itemKey);
+        baseQuantities.delete(itemKey);
+
+        if (delta === 0) {
+          resolve({ success: true });
+          return;
+        }
+
+        const result = await apiUpdateCartQuantity(productId, delta, variationId);
+
+        if (result.success) {
+          set({ items: result.data.items });
+          resolve({ success: true });
+        } else {
+          console.error("Failed to update quantity:", result.error);
+          // Rollback to base quantity
+          set({
+            items: get().items.map((i) =>
+              i.product.id === productId && i.variation?.id === variationId
+                ? { ...i, cartQuantity: baseQty }
+                : i
+            ),
+            error: result.error,
+          });
+          resolve({ success: false, error: result.error, code: result.code });
+        }
+      }, DEBOUNCE_MS);
+
+      debounceTimers.set(itemKey, timer);
+    });
   },
 
-  // Decrement quantity (optimistic update)
+  // Decrement quantity (debounced)
   decrementQuantity: async (productId, variationId) => {
-    const previousItems = get().items;
+    const itemKey = getItemKey(productId, variationId);
+    const items = get().items;
+    const item = items.find(
+      (i) => i.product.id === productId && i.variation?.id === variationId
+    );
+    if (!item) return { success: false, error: "Item not found" };
 
-    // Optimistic: update UI immediately
+    // Guard: don't allow going below 1
+    if (item.cartQuantity <= 1) {
+      return { success: true };
+    }
+
+    // Save base quantity if this is the first pending change
+    if (!pendingDeltas.has(itemKey)) {
+      baseQuantities.set(itemKey, item.cartQuantity);
+    }
+
+    // Accumulate delta
+    const currentDelta = pendingDeltas.get(itemKey) || 0;
+    pendingDeltas.set(itemKey, currentDelta - 1);
+
+    // Optimistic update
     set({
-      items: previousItems.map((item) =>
-        item.product.id === productId && item.variation?.id === variationId
-          ? { ...item, cartQuantity: item.cartQuantity - 1 }
-          : item
+      items: items.map((i) =>
+        i.product.id === productId && i.variation?.id === variationId
+          ? { ...i, cartQuantity: i.cartQuantity - 1 }
+          : i
       ),
       error: null,
     });
 
-    const result = await apiUpdateCartQuantity(productId, -1, variationId);
+    // Clear existing timer and start new one
+    const existingTimer = debounceTimers.get(itemKey);
+    if (existingTimer) clearTimeout(existingTimer);
 
-    if (result.success) {
-      // Sync with server truth
-      set({ items: result.data.items });
-      return { success: true };
-    } else {
-      console.error("Failed to update quantity:", result.error);
-      // Rollback on error
-      set({ items: previousItems, error: result.error });
-      return { success: false, error: result.error, code: result.code };
-    }
+    return new Promise((resolve) => {
+      const timer = setTimeout(async () => {
+        const delta = pendingDeltas.get(itemKey) || 0;
+        const baseQty = baseQuantities.get(itemKey) || 0;
+
+        // Clear pending state
+        pendingDeltas.delete(itemKey);
+        debounceTimers.delete(itemKey);
+        baseQuantities.delete(itemKey);
+
+        if (delta === 0) {
+          resolve({ success: true });
+          return;
+        }
+
+        const result = await apiUpdateCartQuantity(productId, delta, variationId);
+
+        if (result.success) {
+          set({ items: result.data.items });
+          resolve({ success: true });
+        } else {
+          console.error("Failed to update quantity:", result.error);
+          // Rollback to base quantity
+          set({
+            items: get().items.map((i) =>
+              i.product.id === productId && i.variation?.id === variationId
+                ? { ...i, cartQuantity: baseQty }
+                : i
+            ),
+            error: result.error,
+          });
+          resolve({ success: false, error: result.error, code: result.code });
+        }
+      }, DEBOUNCE_MS);
+
+      debounceTimers.set(itemKey, timer);
+    });
   },
 
   // Validate cart before checkout
