@@ -286,10 +286,19 @@ export default async function PaymentSuccessPage({
                   <span>Tuotteet:</span>
                   <span>
                     {formatPrice(
-                      order.OrderLineItems.reduce((sum, item) => sum + item.totalAmount, 0) - (order.discountAmount ?? 0)
+                      order.OrderLineItems.reduce((sum, item) => sum + item.totalAmount, 0)
                     )}
                   </span>
                 </div>
+
+                {order.discountCodeValue && order.discountAmount && order.discountAmount > 0 && (
+                  <div className="flex justify-between items-center text-charcoal/70">
+                    <span>Alennuskoodi: {order.discountCodeValue}</span>
+                    <span className="text-green-600 font-semibold">
+                      -{formatPrice(order.discountAmount)}
+                    </span>
+                  </div>
+                )}
 
                 {order.orderShipmentMethod && (
                   <div className="flex justify-between items-center text-charcoal/70">
