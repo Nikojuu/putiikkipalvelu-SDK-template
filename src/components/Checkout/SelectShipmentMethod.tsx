@@ -49,22 +49,24 @@ export function SelectShipmentMethod({
   // Safely extract arrays with defaults
   const homeDelivery = shippingOptions?.homeDelivery ?? [];
   const pickupPoints = shippingOptions?.pickupPoints ?? [];
+  // Lowest threshold across ALL methods - for accurate "add X for free shipping" message
+  const lowestFreeShippingThreshold = shippingOptions?.lowestFreeShippingThreshold ?? null;
 
   // Format helpers
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)}€`;
 
   /**
-   * Renders free shipping badge or "add X more" message
-   * Only shows for methods that have a freeShippingThreshold configured
+   * Renders free shipping badge or "add X more" message.
+   * Uses the LOWEST threshold across all methods for "add X more" message,
+   * so customers see the easiest path to free shipping.
    */
-  const renderFreeShippingInfo = (freeShippingThreshold: number | null) => {
-    // No free shipping threshold = no badge (e.g., "Nouto" which is just free)
-    if (freeShippingThreshold === null || cartTotal === undefined) {
+  const renderFreeShippingInfo = (methodThreshold: number | null) => {
+    if (cartTotal === undefined) {
       return null;
     }
 
-    // Free shipping threshold met
-    if (cartTotal >= freeShippingThreshold) {
+    // If this specific method has free shipping, show badge
+    if (methodThreshold !== null && cartTotal >= methodThreshold) {
       return (
         <span className="text-xs font-secondary font-medium text-green-700 bg-green-100 px-2 py-1 border border-green-200">
           Ilmainen toimitus
@@ -72,13 +74,18 @@ export function SelectShipmentMethod({
       );
     }
 
-    // Show "add X more" to reach threshold
-    const remaining = freeShippingThreshold - cartTotal;
-    return (
-      <span className="text-xs font-secondary text-charcoal/60">
-        Lisää {formatPrice(remaining)} ilmaiseen toimitukseen
-      </span>
-    );
+    // Show "add X more" based on LOWEST threshold (easiest path to free shipping)
+    // Only show if there's a reachable threshold
+    if (lowestFreeShippingThreshold !== null && cartTotal < lowestFreeShippingThreshold) {
+      const remaining = lowestFreeShippingThreshold - cartTotal;
+      return (
+        <span className="text-xs font-secondary text-charcoal/60">
+          Lisää {formatPrice(remaining)} ilmaiseen toimitukseen
+        </span>
+      );
+    }
+
+    return null;
   };
 
   /**
