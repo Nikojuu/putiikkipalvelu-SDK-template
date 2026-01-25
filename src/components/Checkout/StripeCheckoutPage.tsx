@@ -60,17 +60,23 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     if (!data) {
       return;
     }
-    try {
-      // Fetch shipping options for the customer's postal code
-      // Pass campaigns and discountAmount for accurate free shipping calculation
-      const response = await getShippingOptions(data.postal_code, cartItems, campaigns, discountAmount);
-      setShippingOptions(response);
+
+    // Fetch shipping options for the customer's postal code
+    // Pass campaigns and discountAmount for accurate free shipping calculation
+    const result = await getShippingOptions(
+      data.postal_code,
+      cartItems,
+      campaigns,
+      discountAmount
+    );
+
+    if (result.success) {
+      setShippingOptions(result.data);
       setStep(2);
-    } catch (error) {
+    } else {
       toast({
         title: "Virhe haettaessa toimitustapoja",
-        description:
-          "Virhe haettaessa toimitustapoja, yritä myöhemmin uudestaan",
+        description: result.error || "Yritä myöhemmin uudestaan",
         className:
           "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
         action: (
@@ -80,8 +86,9 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           </div>
         ),
       });
-      console.error("Error fetching shipping options:", error);
+      console.error("Error fetching shipping options:", result.error);
     }
+
     setIsLoading(false);
   };
 
@@ -98,29 +105,30 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
       return;
     }
 
-    try {
-      // Use the validated data
-      const validatedCustomerData = validationResult.data;
+    // Use the validated data
+    const validatedCustomerData = validationResult.data;
 
-      // Convert to the format expected by the checkout API
-      const chosenShipmentMethod = selectedShipping
-        ? {
-            shipmentMethodId: selectedShipping.shipmentMethodId,
-            pickupId: selectedShipping.pickupPointId,
-            serviceId: selectedShipping.serviceId,
-          }
-        : null;
+    // Convert to the format expected by the checkout API
+    const chosenShipmentMethod = selectedShipping
+      ? {
+          shipmentMethodId: selectedShipping.shipmentMethodId,
+          pickupId: selectedShipping.pickupPointId,
+          serviceId: selectedShipping.serviceId,
+        }
+      : null;
 
-      const res = await apiCreateStripeCheckoutSession(
-        chosenShipmentMethod,
-        validatedCustomerData
-      );
-      router.push(res.url);
-    } catch (error) {
-      console.error("Checkout error:", error);
+    const result = await apiCreateStripeCheckoutSession(
+      chosenShipmentMethod,
+      validatedCustomerData
+    );
+
+    if (result.success) {
+      router.push(result.data.url);
+    } else {
+      console.error("Checkout error:", result.error);
       toast({
         title: "Virhe",
-        description: "Maksun käsittely epäonnistui. Yritä uudelleen.",
+        description: result.error || "Maksun käsittely epäonnistui. Yritä uudelleen.",
         className: "bg-red-50 border-red-200",
       });
       setIsLoading(false);

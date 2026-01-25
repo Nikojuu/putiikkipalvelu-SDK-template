@@ -13,14 +13,37 @@ import type {
 } from "@putiikkipalvelu/storefront-sdk";
 import { StorefrontError } from "@putiikkipalvelu/storefront-sdk";
 
+// =============================================================================
+// Result Types
+// =============================================================================
+
 /**
- * Result type for discount code operations that can fail
- * In server actions, we return errors as part of the response
- * instead of throwing (Next.js doesn't serialize error details in production)
+ * Result types for server actions that can fail.
+ * We return errors as part of the response instead of throwing
+ * because Next.js doesn't serialize error details in production.
  */
-export type ApplyDiscountResult =
-  | { success: true; data: ApplyDiscountResponse }
+export type ActionResult<T> =
+  | { success: true; data: T }
   | { success: false; error: string; code?: string };
+
+export type CartResult = ActionResult<CartResponse>;
+export type CartValidationResult = ActionResult<CartValidationResponse>;
+export type ApplyDiscountResult = ActionResult<ApplyDiscountResponse>;
+export type GetDiscountResult = ActionResult<GetDiscountResponse>;
+export type RemoveDiscountResult = ActionResult<RemoveDiscountResponse>;
+
+/**
+ * Helper to extract error info from caught errors
+ */
+function extractError(error: unknown): { error: string; code?: string } {
+  if (error instanceof StorefrontError) {
+    return { error: error.message, code: error.code };
+  }
+  if (error instanceof Error) {
+    return { error: error.message };
+  }
+  return { error: "Tuntematon virhe" };
+}
 
 /**
  * Get cart session options from cookies
@@ -79,20 +102,24 @@ export async function apiAddToCart(
   productId: string,
   variationId?: string,
   quantity: number = 1
-): Promise<CartResponse> {
+): Promise<CartResult> {
   const sessionOptions = await getCartSessionOptions();
 
-  const data = await storefront.cart.addItem({
-    ...sessionOptions,
-    productId,
-    variationId,
-    quantity,
-  });
+  try {
+    const data = await storefront.cart.addItem({
+      ...sessionOptions,
+      productId,
+      variationId,
+      quantity,
+    });
 
-  // Store cartId in cookie if returned
-  await storeCartId(data.cartId);
+    // Store cartId in cookie if returned
+    await storeCartId(data.cartId);
 
-  return data;
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, ...extractError(error) };
+  }
 }
 
 /**
@@ -107,17 +134,21 @@ export async function apiUpdateCartQuantity(
   productId: string,
   delta: number,
   variationId?: string
-): Promise<CartResponse> {
+): Promise<CartResult> {
   const sessionOptions = await getCartSessionOptions();
 
-  const data = await storefront.cart.updateQuantity({
-    ...sessionOptions,
-    productId,
-    variationId,
-    delta,
-  });
+  try {
+    const data = await storefront.cart.updateQuantity({
+      ...sessionOptions,
+      productId,
+      variationId,
+      delta,
+    });
 
-  return data;
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, ...extractError(error) };
+  }
 }
 
 /**
@@ -126,16 +157,20 @@ export async function apiUpdateCartQuantity(
 export async function apiRemoveFromCart(
   productId: string,
   variationId?: string
-): Promise<CartResponse> {
+): Promise<CartResult> {
   const sessionOptions = await getCartSessionOptions();
 
-  const data = await storefront.cart.removeItem({
-    ...sessionOptions,
-    productId,
-    variationId,
-  });
+  try {
+    const data = await storefront.cart.removeItem({
+      ...sessionOptions,
+      productId,
+      variationId,
+    });
 
-  return data;
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, ...extractError(error) };
+  }
 }
 
 /**
@@ -151,16 +186,20 @@ export async function apiRemoveFromCart(
 export async function apiValidateCart(
   cartItems: CartItem[],
   campaigns?: Campaign[]
-): Promise<CartValidationResponse> {
+): Promise<CartValidationResult> {
   const sessionOptions = await getCartSessionOptions();
 
-  const data = await storefront.cart.validate(
-    sessionOptions,
-    cartItems,
-    campaigns
-  );
+  try {
+    const data = await storefront.cart.validate(
+      sessionOptions,
+      cartItems,
+      campaigns
+    );
 
-  return data;
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, ...extractError(error) };
+  }
 }
 
 // =============================================================================
@@ -197,37 +236,36 @@ export async function apiApplyDiscountCode(
 
     return { success: true, data };
   } catch (error) {
-    // Extract error message and code from SDK errors
-    if (error instanceof StorefrontError) {
-      return { success: false, error: error.message, code: error.code };
-    }
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: "Tuntematon virhe" };
+    return { success: false, ...extractError(error) };
   }
 }
 
 /**
  * Get the currently applied discount code
  */
-export async function apiGetDiscountCode(): Promise<GetDiscountResponse> {
+export async function apiGetDiscountCode(): Promise<GetDiscountResult> {
   const sessionOptions = await getCartSessionOptions();
 
-  const data = await storefront.discountCode.get(sessionOptions);
-
-  return data;
+  try {
+    const data = await storefront.discountCode.get(sessionOptions);
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, ...extractError(error) };
+  }
 }
 
 /**
  * Remove the currently applied discount code
  */
-export async function apiRemoveDiscountCode(): Promise<RemoveDiscountResponse> {
+export async function apiRemoveDiscountCode(): Promise<RemoveDiscountResult> {
   const sessionOptions = await getCartSessionOptions();
 
-  const data = await storefront.discountCode.remove(sessionOptions);
-
-  return data;
+  try {
+    const data = await storefront.discountCode.remove(sessionOptions);
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, ...extractError(error) };
+  }
 }
 
 // Re-export types for backwards compatibility

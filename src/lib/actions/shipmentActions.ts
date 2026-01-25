@@ -6,6 +6,11 @@ import type {
   CartItem,
   Campaign,
 } from "@putiikkipalvelu/storefront-sdk";
+import { StorefrontError } from "@putiikkipalvelu/storefront-sdk";
+
+export type ShippingOptionsResult =
+  | { success: true; data: ShipmentMethodsResponse }
+  | { success: false; error: string };
 
 /**
  * Get shipping options for a postal code
@@ -19,16 +24,21 @@ export async function getShippingOptions(
   cartItems?: CartItem[],
   campaigns?: Campaign[],
   discountAmount?: number
-): Promise<ShipmentMethodsResponse> {
-  return storefront.shipping.getOptions(postalCode, { cartItems, campaigns, discountAmount });
-}
-
-/**
- * @deprecated Use getShippingOptions instead
- */
-export async function getShipmentMethods(
-  postalCode: string,
-  cartItems?: CartItem[]
-): Promise<ShipmentMethodsResponse> {
-  return getShippingOptions(postalCode, cartItems);
+): Promise<ShippingOptionsResult> {
+  try {
+    const data = await storefront.shipping.getOptions(postalCode, {
+      cartItems,
+      campaigns,
+      discountAmount,
+    });
+    return { success: true, data };
+  } catch (error) {
+    const message =
+      error instanceof StorefrontError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Tuntematon virhe";
+    return { success: false, error: message };
+  }
 }

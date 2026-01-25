@@ -29,6 +29,7 @@ export type { CartItem };
 type CartState = {
   items: CartItem[];
   loading: boolean;
+  error: string | null;
   discount: AppliedDiscount | null;
   discountLoading: boolean;
   discountError: string | null;
@@ -40,34 +41,46 @@ type CartState = {
   addItem: (
     product: ProductDetail,
     variation?: ProductVariation
-  ) => Promise<void>;
+  ) => Promise<{ success: boolean; error?: string; code?: string }>;
 
-  removeItem: (productId: string, variationId?: string) => Promise<void>;
+  removeItem: (
+    productId: string,
+    variationId?: string
+  ) => Promise<{ success: boolean; error?: string; code?: string }>;
 
-  incrementQuantity: (productId: string, variationId?: string) => Promise<void>;
+  incrementQuantity: (
+    productId: string,
+    variationId?: string
+  ) => Promise<{ success: boolean; error?: string; code?: string }>;
 
-  decrementQuantity: (productId: string, variationId?: string) => Promise<void>;
+  decrementQuantity: (
+    productId: string,
+    variationId?: string
+  ) => Promise<{ success: boolean; error?: string; code?: string }>;
 
-  validateCart: (campaigns?: Campaign[]) => Promise<CartValidationResponse>;
+  validateCart: (
+    campaigns?: Campaign[]
+  ) => Promise<{ success: boolean; data?: CartValidationResponse; error?: string }>;
 
   // Discount code operations
   applyDiscount: (
     code: string,
     campaigns?: Campaign[]
   ) => Promise<{ success: boolean; error?: string }>;
-  removeDiscount: () => Promise<void>;
+  removeDiscount: () => Promise<{ success: boolean; error?: string }>;
 };
 
 export const useCart = create<CartState>()((set, get) => ({
   items: [],
   loading: false,
+  error: null,
   discount: null,
   discountLoading: false,
   discountError: null,
 
   // Load cart from Redis
   syncWithBackend: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const data = await apiFetchCart();
       set({ items: data.items, loading: false });
@@ -79,27 +92,33 @@ export const useCart = create<CartState>()((set, get) => ({
 
   // Add item to cart
   addItem: async (product, variation) => {
-    set({ loading: true });
-    try {
-      const data = await apiAddToCart(product.id, variation?.id, 1);
-      set({ items: data.items, loading: false });
-    } catch (error) {
-      console.error("Failed to add item:", error);
-      set({ loading: false });
-      throw error;
+    set({ loading: true, error: null });
+
+    const result = await apiAddToCart(product.id, variation?.id, 1);
+
+    if (result.success) {
+      set({ items: result.data.items, loading: false });
+      return { success: true };
+    } else {
+      console.error("Failed to add item:", result.error);
+      set({ loading: false, error: result.error });
+      return { success: false, error: result.error, code: result.code };
     }
   },
 
   // Remove item from cart
   removeItem: async (productId, variationId) => {
-    set({ loading: true });
-    try {
-      const data = await apiRemoveFromCart(productId, variationId);
-      set({ items: data.items, loading: false });
-    } catch (error) {
-      console.error("Failed to remove item:", error);
-      set({ loading: false });
-      throw error;
+    set({ loading: true, error: null });
+
+    const result = await apiRemoveFromCart(productId, variationId);
+
+    if (result.success) {
+      set({ items: result.data.items, loading: false });
+      return { success: true };
+    } else {
+      console.error("Failed to remove item:", result.error);
+      set({ loading: false, error: result.error });
+      return { success: false, error: result.error, code: result.code };
     }
   },
 
@@ -114,21 +133,20 @@ export const useCart = create<CartState>()((set, get) => ({
           ? { ...item, cartQuantity: item.cartQuantity + 1 }
           : item
       ),
+      error: null,
     });
 
-    try {
-      const data = await apiUpdateCartQuantity(
-        productId,
-        +1, // Delta: increment by 1
-        variationId
-      );
+    const result = await apiUpdateCartQuantity(productId, +1, variationId);
+
+    if (result.success) {
       // Sync with server truth
-      set({ items: data.items });
-    } catch (error) {
-      console.error("Failed to update quantity:", error);
+      set({ items: result.data.items });
+      return { success: true };
+    } else {
+      console.error("Failed to update quantity:", result.error);
       // Rollback on error
-      set({ items: previousItems });
-      throw error;
+      set({ items: previousItems, error: result.error });
+      return { success: false, error: result.error, code: result.code };
     }
   },
 
@@ -143,47 +161,49 @@ export const useCart = create<CartState>()((set, get) => ({
           ? { ...item, cartQuantity: item.cartQuantity - 1 }
           : item
       ),
+      error: null,
     });
 
-    try {
-      const data = await apiUpdateCartQuantity(
-        productId,
-        -1, // Delta: decrement by 1
-        variationId
-      );
+    const result = await apiUpdateCartQuantity(productId, -1, variationId);
+
+    if (result.success) {
       // Sync with server truth
-      set({ items: data.items });
-    } catch (error) {
-      console.error("Failed to update quantity:", error);
+      set({ items: result.data.items });
+      return { success: true };
+    } else {
+      console.error("Failed to update quantity:", result.error);
       // Rollback on error
-      set({ items: previousItems });
-      throw error;
+      set({ items: previousItems, error: result.error });
+      return { success: false, error: result.error, code: result.code };
     }
   },
 
   // Validate cart before checkout
   validateCart: async (campaigns?: Campaign[]) => {
-    set({ loading: true });
-    try {
-      const cartItems = get().items;
-      const data = await apiValidateCart(cartItems, campaigns);
+    set({ loading: true, error: null });
 
+    const cartItems = get().items;
+    const result = await apiValidateCart(cartItems, campaigns);
+
+    if (result.success) {
       // Update items from validation
-      set({ items: data.items, loading: false });
+      set({ items: result.data.items, loading: false });
 
       // Handle discount removal
-      if (data.changes.discountCouponRemoved) {
+      if (result.data.changes.discountCouponRemoved) {
         set({
           discount: null,
-          discountError: getDiscountRemovalMessage(data.changes.discountRemovalReason),
+          discountError: getDiscountRemovalMessage(
+            result.data.changes.discountRemovalReason
+          ),
         });
       }
 
-      return data;
-    } catch (error) {
-      console.error("Failed to validate cart:", error);
-      set({ loading: false });
-      throw error;
+      return { success: true, data: result.data };
+    } else {
+      console.error("Failed to validate cart:", result.error);
+      set({ loading: false, error: result.error });
+      return { success: false, error: result.error };
     }
   },
 
@@ -206,7 +226,8 @@ export const useCart = create<CartState>()((set, get) => ({
       return { success: true };
     } else {
       // Use the specific error message from the result
-      const errorMessage = result.error || getDiscountApplyErrorMessage(undefined);
+      const errorMessage =
+        result.error || getDiscountApplyErrorMessage(undefined);
       set({ discountLoading: false, discountError: errorMessage });
       return { success: false, error: errorMessage };
     }
@@ -215,15 +236,16 @@ export const useCart = create<CartState>()((set, get) => ({
   // Remove discount code
   removeDiscount: async () => {
     set({ discountLoading: true, discountError: null });
-    try {
-      await apiRemoveDiscountCode();
-      set({
-        discountLoading: false,
-        discount: null,
-      });
-    } catch (error) {
-      console.error("Failed to remove discount:", error);
+
+    const result = await apiRemoveDiscountCode();
+
+    if (result.success) {
+      set({ discountLoading: false, discount: null });
+      return { success: true };
+    } else {
+      console.error("Failed to remove discount:", result.error);
       set({ discountLoading: false });
+      return { success: false, error: result.error };
     }
   },
 }));

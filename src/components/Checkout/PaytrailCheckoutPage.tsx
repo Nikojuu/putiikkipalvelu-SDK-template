@@ -59,17 +59,23 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     if (!data) {
       return;
     }
-    try {
-      // Fetch shipping options for the customer's postal code
-      // Pass campaigns and discountAmount for accurate free shipping calculation
-      const response = await getShippingOptions(data.postal_code, cartItems, campaigns, discountAmount);
-      setShippingOptions(response);
+
+    // Fetch shipping options for the customer's postal code
+    // Pass campaigns and discountAmount for accurate free shipping calculation
+    const result = await getShippingOptions(
+      data.postal_code,
+      cartItems,
+      campaigns,
+      discountAmount
+    );
+
+    if (result.success) {
+      setShippingOptions(result.data);
       setStep(2);
-    } catch (error) {
+    } else {
       toast({
         title: "Virhe haettaessa toimitustapoja",
-        description:
-          "Virhe haettaessa toimitustapoja, yritä myöhemmin uudestaan",
+        description: result.error || "Yritä myöhemmin uudestaan",
         className:
           "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
         action: (
@@ -78,8 +84,9 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           </div>
         ),
       });
-      console.error("Error fetching shipping options:", error);
+      console.error("Error fetching shipping options:", result.error);
     }
+
     setIsLoading(false);
   };
 
@@ -93,32 +100,28 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     const validatedCustomerData = validationResult.data;
     setIsLoading(true);
 
-    try {
-      // Convert to the format expected by the checkout API
-      const chosenShipmentMethod = selectedShipping
-        ? {
-            shipmentMethodId: selectedShipping.shipmentMethodId,
-            pickupId: selectedShipping.pickupPointId,
-            serviceId: selectedShipping.serviceId,
-          }
-        : null;
+    // Convert to the format expected by the checkout API
+    const chosenShipmentMethod = selectedShipping
+      ? {
+          shipmentMethodId: selectedShipping.shipmentMethodId,
+          pickupId: selectedShipping.pickupPointId,
+          serviceId: selectedShipping.serviceId,
+        }
+      : null;
 
-      const paytrailData = await apiCreatePaytrailCheckoutSession(
-        chosenShipmentMethod,
-        validatedCustomerData
-      );
+    const result = await apiCreatePaytrailCheckoutSession(
+      chosenShipmentMethod,
+      validatedCustomerData
+    );
 
-      setPaytrailData(paytrailData);
+    if (result.success) {
+      setPaytrailData(result.data);
       setStep(3);
-    } catch (error) {
-      console.error("Checkout failed:", error);
-
-      const errorMessage =
-        error instanceof Error ? error.message : "Tuntematon virhe";
-
+    } else {
+      console.error("Checkout failed:", result.error);
       toast({
         title: "Virhe maksun käsittelyssä",
-        description: errorMessage,
+        description: result.error || "Tuntematon virhe",
         className:
           "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
         action: (
@@ -127,9 +130,9 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           </div>
         ),
       });
-    } finally {
-      setIsLoading(false);
     }
+
+    setIsLoading(false);
   };
 
   const handleGoBack = () => {

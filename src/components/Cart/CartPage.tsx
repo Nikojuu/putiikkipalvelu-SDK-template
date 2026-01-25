@@ -69,64 +69,68 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const handleCheckout = async () => {
     if (isValidating) return;
     setIsValidating(true);
+    setValidationError(null); // Clear previous errors
 
-    try {
-      setValidationError(null); // Clear previous errors
-      const validation = await cart.validateCart(campaigns);
+    const result = await cart.validateCart(campaigns);
 
-      if (validation.hasChanges) {
-        // Build toast message from changes
-        const messages: string[] = [];
-        if (validation.changes.removedItems > 0) {
-          messages.push(
-            `${validation.changes.removedItems} tuotetta poistettiin (loppu varastosta tai poistettu)`
-          );
-        }
-        if (validation.changes.quantityAdjusted > 0) {
-          messages.push(
-            `${validation.changes.quantityAdjusted} tuotteen määrää vähennettiin varastotilanteen mukaan`
-          );
-        }
-        if (validation.changes.priceChanged > 0) {
-          messages.push(
-            `${validation.changes.priceChanged} tuotteen hinta päivitettiin`
-          );
-        }
-        if (validation.changes.discountCouponRemoved) {
-          messages.push("Alennuskoodi poistettiin kampanja-alennuksen vuoksi");
-        }
-
-        // Show warning toast
-        toast({
-          title:
-            "Ostoskorissa on tapahtunut muutoksia. Tarkista ostoskori ennen jatkamista.",
-          description: messages.join(". "),
-          variant: "default",
-          className:
-            "bg-amber-50 border-amber-200 dark:bg-amber-900 dark:border-amber-800",
-        });
-
-        // Set persistent error banner
-        setValidationError(
-          "Tuotteissa on tapahtunut muutoksia tarkista ostoskori ennen jatkamista"
-        );
-
-        // BLOCK navigation - user stays on cart page
-        return;
-      }
-
-      // Validation passed - proceed to checkout
-      router.push("/payment/checkout");
-    } catch (error) {
-      console.error("Validation failed:", error);
+    if (!result.success) {
+      console.error("Validation failed:", result.error);
       toast({
         title: "Virhe",
-        description: "Ostoskorin tarkistus epäonnistui. Yritä uudelleen.",
+        description: result.error || "Ostoskorin tarkistus epäonnistui. Yritä uudelleen.",
         variant: "destructive",
       });
-    } finally {
       setIsValidating(false);
+      return;
     }
+
+    const validation = result.data!;
+
+    if (validation.hasChanges) {
+      // Build toast message from changes
+      const messages: string[] = [];
+      if (validation.changes.removedItems > 0) {
+        messages.push(
+          `${validation.changes.removedItems} tuotetta poistettiin (loppu varastosta tai poistettu)`
+        );
+      }
+      if (validation.changes.quantityAdjusted > 0) {
+        messages.push(
+          `${validation.changes.quantityAdjusted} tuotteen määrää vähennettiin varastotilanteen mukaan`
+        );
+      }
+      if (validation.changes.priceChanged > 0) {
+        messages.push(
+          `${validation.changes.priceChanged} tuotteen hinta päivitettiin`
+        );
+      }
+      if (validation.changes.discountCouponRemoved) {
+        messages.push("Alennuskoodi poistettiin kampanja-alennuksen vuoksi");
+      }
+
+      // Show warning toast
+      toast({
+        title:
+          "Ostoskorissa on tapahtunut muutoksia. Tarkista ostoskori ennen jatkamista.",
+        description: messages.join(". "),
+        variant: "default",
+        className:
+          "bg-amber-50 border-amber-200 dark:bg-amber-900 dark:border-amber-800",
+      });
+
+      // Set persistent error banner
+      setValidationError(
+        "Tuotteissa on tapahtunut muutoksia tarkista ostoskori ennen jatkamista"
+      );
+
+      // BLOCK navigation - user stays on cart page
+      setIsValidating(false);
+      return;
+    }
+
+    // Validation passed - proceed to checkout
+    setIsValidating(false);
+    router.push("/payment/checkout");
   };
 
   return (
