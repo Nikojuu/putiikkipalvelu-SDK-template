@@ -11,7 +11,7 @@ import { getStoreConfig, getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
 import { storefront } from "@/lib/storefront";
 import type {
   ProductSortOption,
-  Category,
+  
   Product,
 } from "@putiikkipalvelu/storefront-sdk";
 
