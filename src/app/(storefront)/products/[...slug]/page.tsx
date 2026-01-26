@@ -30,6 +30,8 @@ export async function generateMetadata({
     const categorySlug = slugs[slugs.length - 1]; // Get the last slug for category
 
     let categoryName = "Tuotteet";
+    let metaTitle: string | null = null;
+    let metaDescription: string | null = null;
 
     if (categorySlug && categorySlug !== "all-products") {
       try {
@@ -37,24 +39,29 @@ export async function generateMetadata({
         const { category } = await storefront.categories.getBySlug(decodedSlug, {
           next: { revalidate: 86400 },
         });
-        categoryName = category.name || "Tuotteet"; // Use fetched name or default
+        categoryName = category.name || "Tuotteet";
+        metaTitle = category.metaTitle;
+        metaDescription = category.metaDescription;
       } catch (error) {
         console.error("Error fetching category metadata for SEO:", error);
-        // Fallback to default name if API call fails -  important to have fallback for SEO
       }
     }
 
     const categoryUrl = `${domain}/products/${slugs.join("/")}`;
 
+    // Use custom SEO fields if set, otherwise fall back to auto-generated
+    const title = metaTitle || `${config.store.name} | ${categoryName}`;
+    const description = metaDescription || `Tutustu ${config.store.name} verkkokaupan tuotteisiin kategoriassa ${categoryName}.`;
+
     return {
-      title: `${config.store.name} | ${categoryName}`,
-      description: `Tutustu ${config.store.name} verkkokaupan tuotteisiin kategoriassa ${categoryName}.`,
+      title,
+      description,
       alternates: {
         canonical: categoryUrl,
       },
       openGraph: {
-        title: `${config.store.name} | ${categoryName}`,
-        description: `Tutustu ${config.store.name} verkkokaupan tuotteisiin kategoriassa ${categoryName}.`,
+        title,
+        description,
         url: categoryUrl,
         siteName: config.store.name,
         locale: "fi_FI",
@@ -62,8 +69,8 @@ export async function generateMetadata({
       },
       twitter: {
         card: "summary_large_image",
-        title: `${config.store.name} | ${categoryName}`,
-        description: `Tutustu ${config.store.name} verkkokaupan tuotteisiin kategoriassa ${categoryName}.`,
+        title,
+        description,
       },
     };
   } catch (error) {

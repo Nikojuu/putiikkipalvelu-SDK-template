@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/hooks/use-cart";
 import { useEffect, useState, useRef } from "react";
+import { usePathname } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -24,6 +25,10 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
   const items = useCart((state) => state.items);
   const syncWithBackend = useCart((state) => state.syncWithBackend);
   const itemCount = items.length;
+  const pathname = usePathname();
+
+  // Hide cart on checkout page to prevent modifications during payment flow
+  const isOnCheckoutPage = pathname === "/payment/checkout";
 
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const initializedRef = useRef<boolean>(false);
@@ -46,6 +51,11 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Don't render cart on checkout page to prevent modifications during payment flow
+  if (isOnCheckoutPage) {
+    return null;
+  }
 
   return (
     <Sheet>
