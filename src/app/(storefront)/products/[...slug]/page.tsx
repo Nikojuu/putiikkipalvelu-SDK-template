@@ -142,6 +142,7 @@ const ProductsPage = async ({
             products={products}
             categorySlug={slugs.join("/")}
             totalCount={totalCount}
+            storeDomain={domain}
           />
         </>
       )}

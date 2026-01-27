@@ -1,12 +1,13 @@
 import { Product, WithContext } from "schema-dts";
 import type { ProductDetail } from "@putiikkipalvelu/storefront-sdk";
-import { STORE_NAME, STORE_DOMAIN } from "@/app/utils/constants";
 
 interface ProductSchemaProps {
   product: ProductDetail;
+  storeName: string;
+  storeDomain: string;
 }
 
-export default function ProductSchema({ product }: ProductSchemaProps) {
+export default function ProductSchema({ product, storeName, storeDomain }: ProductSchemaProps) {
   const firstVariation = product.variations?.[0];
 
   // Determine prices (variation takes priority)
@@ -41,10 +42,10 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
     price: priceInEuros,
     priceCurrency: "EUR",
     availability: availability,
-    url: `${STORE_DOMAIN}/product/${product.slug}`,
+    url: `${storeDomain}/product/${product.slug}`,
     seller: {
       "@type": "Organization" as const,
-      name: STORE_NAME,
+      name: storeName,
     },
   };
 
@@ -60,7 +61,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
     image: product.images || [],
     brand: {
       "@type": "Brand",
-      name: STORE_NAME,
+      name: storeName,
     },
     offers: offers,
     category: product.categories?.[0]?.name || "Products",

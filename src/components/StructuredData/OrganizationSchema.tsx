@@ -7,13 +7,15 @@ export default async function OrganizationSchema() {
     const domain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);
     const logoUrl = getSEOValue(config.store.logoUrl, SEO_FALLBACKS.logoUrl);
     const description = getSEOValue(config.seo.seoDescription, SEO_FALLBACKS.description);
-    const instagramUrl = config.seo.instagramUrl;
-    const facebookUrl = config.seo.facebookUrl;
 
-    // Build social media links array
+    // Build social media links array (sameAs property)
     const sameAs: string[] = [];
-    if (instagramUrl) sameAs.push(instagramUrl);
-    if (facebookUrl) sameAs.push(facebookUrl);
+    if (config.seo.instagramUrl) sameAs.push(config.seo.instagramUrl);
+    if (config.seo.facebookUrl) sameAs.push(config.seo.facebookUrl);
+    if (config.seo.tiktokUrl) sameAs.push(config.seo.tiktokUrl);
+    if (config.seo.youtubeUrl) sameAs.push(config.seo.youtubeUrl);
+    if (config.seo.pinterestUrl) sameAs.push(config.seo.pinterestUrl);
+    if (config.seo.linkedinUrl) sameAs.push(config.seo.linkedinUrl);
 
     const schema: WithContext<Organization> = {
       "@context": "https://schema.org",
@@ -29,9 +31,13 @@ export default async function OrganizationSchema() {
       contactPoint: {
         "@type": "ContactPoint",
         contactType: "customer service",
+        email: config.store.email,
         availableLanguage: "Finnish",
       },
       ...(sameAs.length > 0 && { sameAs }),
+      ...(config.seo.foundingDate && {
+        foundingDate: config.seo.foundingDate.split("T")[0],
+      }),
     };
 
     return (

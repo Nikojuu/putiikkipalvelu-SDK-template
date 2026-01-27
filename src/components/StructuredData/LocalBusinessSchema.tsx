@@ -9,13 +9,15 @@ export default async function LocalBusinessSchema() {
     const description = getSEOValue(config.seo.seoDescription, SEO_FALLBACKS.description);
     const priceRange = getSEOValue(config.seo.priceRange, SEO_FALLBACKS.priceRange);
     const businessType = getSEOValue(config.seo.businessType, SEO_FALLBACKS.businessType);
-    const instagramUrl = config.seo.instagramUrl;
-    const facebookUrl = config.seo.facebookUrl;
 
-    // Build social media links array
+    // Build social media links array (sameAs property)
     const sameAs: string[] = [];
-    if (instagramUrl) sameAs.push(instagramUrl);
-    if (facebookUrl) sameAs.push(facebookUrl);
+    if (config.seo.instagramUrl) sameAs.push(config.seo.instagramUrl);
+    if (config.seo.facebookUrl) sameAs.push(config.seo.facebookUrl);
+    if (config.seo.tiktokUrl) sameAs.push(config.seo.tiktokUrl);
+    if (config.seo.youtubeUrl) sameAs.push(config.seo.youtubeUrl);
+    if (config.seo.pinterestUrl) sameAs.push(config.seo.pinterestUrl);
+    if (config.seo.linkedinUrl) sameAs.push(config.seo.linkedinUrl);
 
     // Format payment methods from config
     const paymentMethods = config.payments.methods
@@ -61,6 +63,9 @@ export default async function LocalBusinessSchema() {
         description: "Verkkokauppa avoinna 24/7",
       },
       ...(sameAs.length > 0 && { sameAs }),
+      ...(config.seo.foundingDate && {
+        foundingDate: config.seo.foundingDate.split("T")[0],
+      }),
       contactPoint: {
         "@type": "ContactPoint",
         contactType: "customer service",

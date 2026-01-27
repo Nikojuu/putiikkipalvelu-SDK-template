@@ -1,6 +1,5 @@
 import { CollectionPage, WithContext } from "schema-dts";
 import type { Product } from "@putiikkipalvelu/storefront-sdk";
-import { STORE_DOMAIN } from "@/app/utils/constants";
 
 interface CollectionPageSchemaProps {
   name: string;
@@ -8,6 +7,7 @@ interface CollectionPageSchemaProps {
   products: Product[];
   categorySlug: string;
   totalCount?: number;
+  storeDomain: string;
 }
 
 export default function CollectionPageSchema({
@@ -16,14 +16,15 @@ export default function CollectionPageSchema({
   products,
   categorySlug,
   totalCount,
+  storeDomain,
 }: CollectionPageSchemaProps) {
   const schema: WithContext<CollectionPage> = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "@id": `${STORE_DOMAIN}/products/${categorySlug}`,
+    "@id": `${storeDomain}/products/${categorySlug}`,
     name: name,
     description: description || `Browse products in ${name} category`,
-    url: `${STORE_DOMAIN}/products/${categorySlug}`,
+    url: `${storeDomain}/products/${categorySlug}`,
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: totalCount || products.length,
@@ -34,11 +35,11 @@ export default function CollectionPageSchema({
           position: index + 1,
           item: {
             "@type": "Product" as const,
-            "@id": `${STORE_DOMAIN}/product/${product.slug}`,
+            "@id": `${storeDomain}/product/${product.slug}`,
             name: product.name,
             description: product.description,
             image: product.images?.[0] || [],
-            url: `${STORE_DOMAIN}/product/${product.slug}`,
+            url: `${storeDomain}/product/${product.slug}`,
             offers: {
               "@type": "Offer" as const,
               price: (price / 100).toFixed(2),
@@ -47,7 +48,7 @@ export default function CollectionPageSchema({
                 product.quantity !== null && product.quantity > 0
                   ? ("https://schema.org/InStock" as const)
                   : ("https://schema.org/OutOfStock" as const),
-              url: `${STORE_DOMAIN}/product/${product.slug}`,
+              url: `${storeDomain}/product/${product.slug}`,
             },
           },
         };
