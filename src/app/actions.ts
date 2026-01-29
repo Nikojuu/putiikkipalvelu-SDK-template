@@ -4,7 +4,7 @@ import * as React from "react";
 import { z } from "zod";
 import { Resend } from "resend";
 import ContactFormEmail from "@/components/Email/ContactFormEmail";
-import { EMAIL } from "./utils/constants";
+import { getStoreConfig } from "@/lib/storeConfig";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FormSchema = z.object({
@@ -29,9 +29,10 @@ export async function submitContactForm(formData: FormData) {
   const { firstName, lastName, email, message } = validatedFields.data;
 
   try {
+    const storeConfig = await getStoreConfig();
     const { error } = await resend.emails.send({
       from: "Putiikkipalvelu <info@putiikkipalvelu.fi>",
-      to: [EMAIL],
+      to: [storeConfig.store.email],
       subject: "Sinulle on uusi yhteydenottopyyntö",
       react: ContactFormEmail({ firstName, lastName, email, message }) as React.ReactElement,
     });
