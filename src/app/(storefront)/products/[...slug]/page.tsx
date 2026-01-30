@@ -147,7 +147,7 @@ const ProductsPage = async ({
         </>
       )}
       <section className="pt-8 md:pt-16 container mx-auto px-4 bg-warm-white">
-        <Subtitle subtitle={categoryName || "Tuotteet"} />
+        <Subtitle subtitle={categoryName || "Tuotteet"} as="h1" />
         {products && products.length > 0 ? (
           <>
             <div className="max-w-screen-xl mx-auto flex justify-end my-4">

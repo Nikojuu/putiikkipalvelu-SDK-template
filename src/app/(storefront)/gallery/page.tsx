@@ -60,7 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const GalleryPage = () => {
   return (
     <div className="mt-24 md:mt-48 mx-auto max-w-screen-2xl px-4">
-      <Subtitle subtitle="Galleria" />
+      <Subtitle subtitle="Galleria" as="h1" />
       <PhotoGallery />
     </div>
   );

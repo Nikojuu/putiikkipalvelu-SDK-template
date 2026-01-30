@@ -81,6 +81,7 @@ export default function ContactForm() {
       <Subtitle
         subtitle="Ollaan yhteydessä!"
         description="Kerro minulle ideasi tai kysy mitä vain - vastaan mielelläni"
+        as="h1"
       />
 
       <div className="container mx-auto px-4 max-w-xl">

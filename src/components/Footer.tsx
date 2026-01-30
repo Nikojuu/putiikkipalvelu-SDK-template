@@ -63,7 +63,7 @@ export function Footer({ logoUrl, storeName, instagramUrl }: FooterProps) {
                 Yhteystiedot
               </Link>
               <Link
-                href="/privacy-policy"
+                href="/privacy"
                 className="text-sm font-secondary text-warm-white/70 hover:text-rose-gold transition-colors duration-300"
               >
                 Tietosuojakäytäntö
