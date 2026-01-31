@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRef } from "react";
 import { useInView } from "framer-motion";
+import DOMPurify from "isomorphic-dompurify";
 
 type AboutBlockType = {
   imgSrc: string;
@@ -92,17 +93,13 @@ const AboutBlock = ({ blockInfo }: { blockInfo: AboutBlockType }) => {
             {blockInfo.title}
           </h3>
 
-          {/* Text content with paragraph handling */}
-          <div className="space-y-4">
-            {blockInfo.text.split("\n\n").map((paragraph, index) => (
-              <p
-                key={index}
-                className="text-sm md:text-base leading-relaxed text-charcoal/70 font-secondary"
-              >
-                {paragraph.trim()}
-              </p>
-            ))}
-          </div>
+          {/* Text content */}
+          <div
+            className="prose prose-sm md:prose-base prose-p:leading-relaxed prose-p:text-charcoal/70 prose-p:font-secondary max-w-none"
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(blockInfo.text),
+            }}
+          />
 
           {/* Bottom decorative line */}
           <div className="mt-8 h-[1px] bg-gradient-to-r from-rose-gold/40 via-champagne/30 to-transparent max-w-32" />
