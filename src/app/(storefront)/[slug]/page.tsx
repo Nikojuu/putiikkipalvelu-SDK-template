@@ -4,6 +4,7 @@ import DOMPurify from "isomorphic-dompurify";
 import { storefront } from "@/lib/storefront";
 import type { PageBlock } from "@putiikkipalvelu/storefront-sdk";
 import Subtitle from "@/components/subtitle";
+import PhotoGallery from "@/components/Aboutpage/PhotoGallery";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -43,7 +44,7 @@ export default async function CmsPage({ params }: PageProps) {
   }
 
   return (
-    <section className="pt-8 md:pt-16 container mx-auto px-4 bg-warm-white">
+    <section className="pt-8 md:pt-16 container mx-auto px-4 bg-warm-white mb-16">
       <Subtitle subtitle={page.title} as="h1" />
       <div className="max-w-screen-xl mx-auto space-y-8">
         {page.blocks.map((block) => (
@@ -61,7 +62,7 @@ function BlockRenderer({ block }: { block: PageBlock }) {
       const clean = DOMPurify.sanitize(block.data.content);
       return (
         <div
-          className="prose prose-lg max-w-none"
+          className="prose max-w-none"
           dangerouslySetInnerHTML={{ __html: clean }}
         />
       );
@@ -91,21 +92,10 @@ function BlockRenderer({ block }: { block: PageBlock }) {
 
     case "gallery":
       return (
-        <div>
-          {block.data.title && (
-            <h2 className="text-2xl font-semibold mb-4">{block.data.title}</h2>
-          )}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {block.data.items.map((item) => (
-              <img
-                key={item.id}
-                src={item.src}
-                alt={item.alt || ""}
-                className="rounded-lg object-cover w-full aspect-square"
-              />
-            ))}
-          </div>
-        </div>
+        <PhotoGallery
+          items={block.data.items}
+          title={block.data.title}
+        />
       );
 
     case "about":

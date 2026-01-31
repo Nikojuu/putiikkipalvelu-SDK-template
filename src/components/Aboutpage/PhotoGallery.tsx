@@ -6,114 +6,41 @@ import PhotoAlbum from "react-photo-album";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 
-// import optional lightbox plugins
 import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 
-const photos = [
-  {
-    src: "https://picsum.photos/id/10/800/600",
-    width: 800,
-    height: 600,
-    alt: "kuva1",
-  },
-  {
-    src: "https://picsum.photos/id/200/1600/900",
-    width: 1600,
-    height: 900,
-  },
-  {
-    src: "https://picsum.photos/id/30/800/600",
-    width: 800,
-    height: 600,
-  },
-  {
-    src: "https://picsum.photos/id/40/800/600",
-    width: 800,
-    height: 600,
-    alt: "kuva1",
-  },
-  {
-    src: "https://picsum.photos/id/50/1600/900",
-    width: 1600,
-    height: 900,
-  },
-  {
-    src: "https://picsum.photos/id/60/800/600",
-    width: 800,
-    height: 600,
-  },
-  {
-    src: "https://picsum.photos/id/70/800/600",
-    width: 800,
-    height: 600,
-    alt: "kuva1",
-  },
-  {
-    src: "https://picsum.photos/id/80/1600/900",
-    width: 1600,
-    height: 900,
-  },
-  {
-    src: "https://picsum.photos/id/90/800/600",
-    width: 800,
-    height: 600,
-  },
-  {
-    src: "https://picsum.photos/id/100/800/600",
-    width: 800,
-    height: 600,
-    alt: "kuva1",
-  },
-  {
-    src: "https://picsum.photos/id/110/1600/900",
-    width: 1600,
-    height: 900,
-  },
-  {
-    src: "https://picsum.photos/id/120/800/600",
-    width: 800,
-    height: 600,
-  },
-  {
-    src: "https://picsum.photos/id/130/800/600",
-    width: 800,
-    height: 600,
-    alt: "kuva1",
-  },
-  {
-    src: "https://picsum.photos/id/140/1600/900",
-    width: 1600,
-    height: 900,
-  },
-  {
-    src: "https://picsum.photos/id/151/800/600",
-    width: 800,
-    height: 600,
-  },
-  {
-    src: "https://picsum.photos/id/160/800/600",
-    width: 800,
-    height: 600,
-    alt: "kuva1",
-  },
-  {
-    src: "https://picsum.photos/id/170/1600/900",
-    width: 1600,
-    height: 900,
-  },
-  {
-    src: "https://picsum.photos/id/300/800/600",
-    width: 800,
-    height: 600,
-  },
-];
+import Image from "next/image";
+import type { Photo, RenderPhotoProps } from "react-photo-album";
+import type { GalleryItem } from "@putiikkipalvelu/storefront-sdk";
 
-const PhotoGallery = () => {
+interface PhotoGalleryProps {
+  items: GalleryItem[];
+  title?: string;
+}
+
+const PhotoGallery = ({ items, title }: PhotoGalleryProps) => {
   const [index, setIndex] = useState(-1);
+
+  // Map items to react-photo-album format with alternating sizes
+  const sizePatterns = [
+    { width: 1600, height: 1200 }, // 4:3 standard
+    { width: 1200, height: 1600 }, // 3:4 portrait
+    { width: 1600, height: 900 },  // 16:9 wide
+    { width: 1200, height: 1200 }, // 1:1 square
+    { width: 1600, height: 1200 }, // 4:3 standard
+    { width: 1600, height: 900 },  // 16:9 wide
+  ];
+
+  const photos: Photo[] = items.map((item, i) => ({
+    src: item.src,
+    ...sizePatterns[i % sizePatterns.length],
+    alt: item.alt || "",
+  }));
+
   return (
-    <div className="mx-auto   mb-12 ">
+    <div className="mx-auto mb-12">
+      {title && <h2 className="text-2xl font-semibold mb-4">{title}</h2>}
       <PhotoAlbum
         photos={photos}
         layout="masonry"
@@ -141,15 +68,11 @@ const PhotoGallery = () => {
         open={index >= 0}
         index={index}
         close={() => setIndex(-1)}
-        // enable optional lightbox plugins
         plugins={[Thumbnails, Zoom]}
       />
     </div>
   );
 };
-
-import Image from "next/image";
-import type { RenderPhotoProps } from "react-photo-album";
 
 function NextJsImage({
   photo,
@@ -160,7 +83,7 @@ function NextJsImage({
     <div style={{ ...wrapperStyle, position: "relative", overflow: "hidden" }}>
       <Image
         fill
-        className="rounded-sm object-cover transition-transform duration-300 hover:scale-105"
+        className="rounded-sm object-contain transition-transform duration-300 hover:scale-105"
         src={photo}
         placeholder={"blurDataURL" in photo ? "blur" : undefined}
         {...{ alt, title, sizes, onClick }}
