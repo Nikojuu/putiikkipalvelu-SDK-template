@@ -16,10 +16,9 @@ import type { GalleryItem } from "@putiikkipalvelu/storefront-sdk";
 
 interface PhotoGalleryProps {
   items: GalleryItem[];
-  title?: string;
 }
 
-const PhotoGallery = ({ items, title }: PhotoGalleryProps) => {
+const PhotoGallery = ({ items }: PhotoGalleryProps) => {
   const [index, setIndex] = useState(-1);
 
   // Map items to react-photo-album format with alternating sizes
@@ -40,7 +39,6 @@ const PhotoGallery = ({ items, title }: PhotoGalleryProps) => {
 
   return (
     <div className="mx-auto mb-12">
-      {title && <h2 className="text-2xl font-semibold mb-4">{title}</h2>}
       <PhotoAlbum
         photos={photos}
         layout="masonry"

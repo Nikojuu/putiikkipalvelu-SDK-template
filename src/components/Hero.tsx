@@ -5,7 +5,21 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 
-export function Hero() {
+interface HeroProps {
+  title?: string;
+  subtitle?: string;
+  imageUrl?: string;
+  ctaText?: string;
+  ctaLink?: string;
+}
+
+export function Hero({
+  title = "Putiikki\nPalvelu",
+  subtitle = "Laadukkaat tuotteet ja moderni ostoskokemus",
+  imageUrl,
+  ctaText = "Tutustu tuotteisiin",
+  ctaLink = "/products",
+}: HeroProps = {}) {
   const containerRef = useRef(null);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
 
@@ -46,11 +60,11 @@ export function Hero() {
         className="absolute inset-0"
       >
         <Image
-          alt="Putiikkipalvelu verkkokauppa"
-          src="/logo.svg"
+          alt="Hero"
+          src={imageUrl || "/logo.svg"}
           fill
           sizes="100vw"
-          className="object-cover opacity-10"
+          className={`object-cover ${imageUrl ? "opacity-40" : "opacity-10"}`}
           priority
         />
         {/* Elegant overlay gradient */}
@@ -116,20 +130,33 @@ export function Hero() {
             transition={{ duration: 1, delay: 0.4 }}
             className="text-4xl sm:text-5xl lg:text-6xl font-primary font-bold tracking-tight mb-6"
           >
-            <span className="text-gradient-gold">Putiikki</span>
-            <br />
-            <span className="text-charcoal">Palvelu</span>
+            {title.includes("\n") ? (
+              title.split("\n").map((line, i) => (
+                <span key={i}>
+                  {i === 0 ? (
+                    <span className="text-gradient-gold">{line}</span>
+                  ) : (
+                    <span className="text-charcoal">{line}</span>
+                  )}
+                  {i < title.split("\n").length - 1 && <br />}
+                </span>
+              ))
+            ) : (
+              <span className="text-charcoal">{title}</span>
+            )}
           </motion.h1>
 
           {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-            className="text-xl sm:text-2xl lg:text-3xl font-secondary text-charcoal/80 mb-6 max-w-3xl mx-auto leading-tight"
-          >
-            Laadukkaat tuotteet ja moderni ostoskokemus
-          </motion.p>
+          {subtitle && (
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              className="text-xl sm:text-2xl lg:text-3xl font-secondary text-charcoal/80 mb-6 max-w-3xl mx-auto leading-tight"
+            >
+              {subtitle}
+            </motion.p>
+          )}
 
           {/* CTA Buttons */}
           <motion.div
@@ -138,18 +165,14 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 1.1 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link href="/products" className="group">
-              <span className="inline-flex items-center gap-3 px-8 py-4 bg-charcoal text-warm-white font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:bg-rose-gold hover:text-white">
-                Tutustu tuotteisiin
-                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </span>
-            </Link>
-            <Link href="/about" className="group">
-              <span className="inline-flex items-center gap-3 px-8 py-4 border border-charcoal/30 text-charcoal font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:border-rose-gold hover:text-rose-gold">
-                <Sparkles className="w-4 h-4" />
-                Lue lisää
-              </span>
-            </Link>
+            {ctaText && ctaLink && (
+              <Link href={ctaLink} className="group">
+                <span className="inline-flex items-center gap-3 px-8 py-4 bg-charcoal text-warm-white font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:bg-rose-gold hover:text-white">
+                  {ctaText}
+                  <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </span>
+              </Link>
+            )}
           </motion.div>
         </div>
 

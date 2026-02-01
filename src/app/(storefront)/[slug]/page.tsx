@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import DOMPurify from "isomorphic-dompurify";
 import { storefront } from "@/lib/storefront";
 import type { PageBlock } from "@putiikkipalvelu/storefront-sdk";
+import { getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
+import { SEO_ENABLED } from "@/app/utils/constants";
 import Subtitle from "@/components/subtitle";
 import PhotoGallery from "@/components/Aboutpage/PhotoGallery";
 import AboutBlock from "@/components/Aboutpage/AboutBlock";
@@ -22,9 +24,46 @@ export async function generateMetadata({
       next: { revalidate: 60, tags: ["page", slug] },
     });
 
+    const seo = page.seo;
+    const domain = getSEOValue(seo?.domain, SEO_FALLBACKS.domain);
+    const canonicalUrl = `${domain}/${slug}`;
+    const title = page.title;
+    const description = page.description ?? undefined;
+    const ogImage = getSEOValue(seo?.openGraphImageUrl, SEO_FALLBACKS.openGraphImage);
+    const twitterImage = getSEOValue(seo?.twitterImageUrl, SEO_FALLBACKS.twitterImage);
+
     return {
-      title: page.title,
-      description: page.description ?? undefined,
+      title,
+      description,
+      robots: SEO_ENABLED
+        ? "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
+        : "noindex, nofollow",
+      alternates: {
+        canonical: canonicalUrl,
+      },
+      openGraph: {
+        title,
+        description,
+        url: canonicalUrl,
+        images: [
+          {
+            url: ogImage,
+            width: 1200,
+            height: 630,
+            alt: seo?.ogImageAlt ?? title,
+          },
+        ],
+        locale: "fi_FI",
+        type: "website",
+        siteName: page.storeName,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [twitterImage],
+        ...(seo?.twitterHandle ? { site: seo.twitterHandle } : {}),
+      },
     };
   } catch {
     return {
@@ -101,10 +140,7 @@ function BlockRenderer({ block }: { block: PageBlock }) {
 
     case "gallery":
       return (
-        <PhotoGallery
-          items={block.data.items}
-          title={block.data.title}
-        />
+        <PhotoGallery items={block.data.items} />
       );
 
     case "about":
