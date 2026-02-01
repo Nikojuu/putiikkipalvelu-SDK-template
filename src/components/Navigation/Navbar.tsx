@@ -1,7 +1,7 @@
 import { NavbarLinks } from "./NavbarLinks";
 import Cart from "../Cart/Cart";
 import MobileLinks from "./MobileLinks";
-import type { Campaign, Category } from "@putiikkipalvelu/storefront-sdk";
+import type { Campaign, Category, NavPage } from "@putiikkipalvelu/storefront-sdk";
 import CustomerDropdown from "./CustomerDropdown";
 import { getUser } from "@/lib/actions/authActions";
 import { storefront } from "@/lib/storefront";
@@ -18,7 +18,7 @@ const getNavbarData = async (): Promise<{
   }
 };
 
-const Navbar = async ({ campaigns, logoUrl }: { campaigns: Campaign[]; logoUrl: string }) => {
+const Navbar = async ({ campaigns, logoUrl, navPages }: { campaigns: Campaign[]; logoUrl: string; navPages: NavPage[] }) => {
   const { categories } = await getNavbarData();
   const { user } = await getUser();
 
@@ -26,11 +26,11 @@ const Navbar = async ({ campaigns, logoUrl }: { campaigns: Campaign[]; logoUrl: 
     <>
       {/* Mobile menu button */}
       <div className="lg:mr-4">
-        <MobileLinks categories={categories} logoUrl={logoUrl} />
+        <MobileLinks categories={categories} logoUrl={logoUrl} navPages={navPages} />
       </div>
 
       {/* Desktop navigation links */}
-      <NavbarLinks categories={categories} />
+      <NavbarLinks categories={categories} navPages={navPages} />
 
       {/* User dropdown and Cart - positioned on the right */}
       <div className="flex items-center gap-4 ml-auto">

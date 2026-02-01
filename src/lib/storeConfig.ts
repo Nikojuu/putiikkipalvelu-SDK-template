@@ -35,7 +35,5 @@ export function getSEOValue<T>(value: T | null | undefined, fallback: T): T {
  * Cached with React's cache() for request deduplication
  */
 export const getStoreConfig = cache(async (): Promise<StoreConfig> => {
-  return storefront.store.getConfig({
-    next: { revalidate: 300 }, // Cache for 5 minutes
-  });
+  return storefront.store.getConfig();
 });

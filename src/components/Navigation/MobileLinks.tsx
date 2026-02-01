@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
-import type { Category } from "@putiikkipalvelu/storefront-sdk";
+import type { Category, NavPage } from "@putiikkipalvelu/storefront-sdk";
 
 const buildCategoryPath = (
   category: Category,
@@ -112,7 +112,7 @@ const MobileCategory = memo(
 
 MobileCategory.displayName = "MobileCategory";
 
-const MobileLinks = memo(({ categories, logoUrl }: { categories: Category[]; logoUrl: string }) => {
+const MobileLinks = memo(({ categories, logoUrl, navPages }: { categories: Category[]; logoUrl: string; navPages: NavPage[] }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
 
@@ -231,22 +231,17 @@ const MobileLinks = memo(({ categories, logoUrl }: { categories: Category[]; log
               )}
             </AnimatePresence>
 
-            {/* Other navigation links */}
-            <Link
-              href="/about"
-              onClick={handleLinkClick}
-              className="py-4 text-charcoal font-secondary text-base tracking-[0.05em] uppercase border-b border-rose-gold/10 transition-colors duration-300 hover:text-rose-gold"
-            >
-              Meistä
-            </Link>
-
-            <Link
-              href="/gallery"
-              onClick={handleLinkClick}
-              className="py-4 text-charcoal font-secondary text-base tracking-[0.05em] uppercase border-b border-rose-gold/10 transition-colors duration-300 hover:text-rose-gold"
-            >
-              Galleria
-            </Link>
+            {/* Dynamic CMS pages */}
+            {navPages.map((page) => (
+              <Link
+                key={page.slug}
+                href={`/${page.slug}`}
+                onClick={handleLinkClick}
+                className="py-4 text-charcoal font-secondary text-base tracking-[0.05em] uppercase border-b border-rose-gold/10 transition-colors duration-300 hover:text-rose-gold"
+              >
+                {page.title}
+              </Link>
+            ))}
 
             <Link
               href="/contact"

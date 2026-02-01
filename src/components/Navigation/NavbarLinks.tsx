@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import type { Category } from "@putiikkipalvelu/storefront-sdk";
+import type { Category, NavPage } from "@putiikkipalvelu/storefront-sdk";
 import { motion, AnimatePresence } from "framer-motion";
 
 const buildCategoryPath = (
@@ -66,7 +66,7 @@ const DesktopDropdown: React.FC<{
   );
 };
 
-export function NavbarLinks({ categories }: { categories: Category[] }) {
+export function NavbarLinks({ categories, navPages }: { categories: Category[]; navPages: NavPage[] }) {
   const [isShopHovered, setIsShopHovered] = useState(false);
 
   const navLinkClasses =
@@ -134,18 +134,13 @@ export function NavbarLinks({ categories }: { categories: Category[] }) {
           </AnimatePresence>
         </div>
 
-        {/* About Link */}
-        <Link href="/about" className={navLinkClasses}>
-          <span className="hidden lg:inline">Meistä</span>
-          <span className="lg:hidden">Meistä</span>
-          <span className="absolute bottom-0 left-4 right-4 h-[1px] bg-gradient-to-r from-rose-gold to-champagne scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-        </Link>
-
-        {/* Gallery Link */}
-        <Link href="/gallery" className={navLinkClasses}>
-          Galleria
-          <span className="absolute bottom-0 left-4 right-4 h-[1px] bg-gradient-to-r from-rose-gold to-champagne scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-        </Link>
+        {/* Dynamic CMS pages */}
+        {navPages.map((page) => (
+          <Link key={page.slug} href={`/${page.slug}`} className={navLinkClasses}>
+            {page.title}
+            <span className="absolute bottom-0 left-4 right-4 h-[1px] bg-gradient-to-r from-rose-gold to-champagne scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+          </Link>
+        ))}
 
         {/* Contact Link */}
         <Link href="/contact" className={navLinkClasses}>

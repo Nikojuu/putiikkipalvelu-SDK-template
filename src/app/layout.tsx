@@ -96,6 +96,7 @@ export default async function RootLayout({
 }>) {
   const storeConfig = await getStoreConfig();
   const campaigns = storeConfig.campaigns;
+  const navPages = storeConfig.navPages ?? [];
   const logoUrl = storeConfig.store.logoUrl || SEO_FALLBACKS.logoUrl;
   const storeName = storeConfig.store.name;
   const instagramUrl = storeConfig.seo.instagramUrl;
@@ -113,7 +114,7 @@ export default async function RootLayout({
 
       <body className="bg-warm-white">
         <StickyNavbar campaigns={campaigns} logoUrl={logoUrl}>
-          <Navbar campaigns={campaigns} logoUrl={logoUrl} />
+          <Navbar campaigns={campaigns} logoUrl={logoUrl} navPages={navPages} />
         </StickyNavbar>
         <main className="min-h-[75vh] max-w-[3500px]">{children}</main>
         <Footer logoUrl={logoUrl} storeName={storeName} instagramUrl={instagramUrl} />
