@@ -17,25 +17,33 @@ const dispatchMegaMenu = (open: boolean) => {
   window.dispatchEvent(new CustomEvent("megamenu", { detail: { open } }));
 };
 
-/** Single top-level category nav item with its own mega menu */
+/** Check if any child in a category has children (3 levels deep) */
+const hasGrandchildren = (category: Category): boolean => {
+  return category.children?.some(
+    (child) => child.children && child.children.length > 0
+  ) ?? false;
+};
+
+/** Category nav item — renders mega menu (3+ levels) or simple dropdown (2 levels) */
 const CategoryNavItem: React.FC<{
   category: Category;
-  onOpen: () => void;
-  onClose: () => void;
-}> = ({ category, onOpen, onClose }) => {
+  onMegaOpen: () => void;
+  onMegaClose: () => void;
+}> = ({ category, onMegaOpen, onMegaClose }) => {
   const [isHovered, setIsHovered] = useState(false);
   const hasChildren = category.children && category.children.length > 0;
+  const isMega = hasChildren && hasGrandchildren(category);
   const categoryPath = `/products/${category.slug}`;
 
   const handleEnter = useCallback(() => {
     setIsHovered(true);
-    if (hasChildren) onOpen();
-  }, [hasChildren, onOpen]);
+    if (isMega) onMegaOpen();
+  }, [isMega, onMegaOpen]);
 
   const handleLeave = useCallback(() => {
     setIsHovered(false);
-    if (hasChildren) onClose();
-  }, [hasChildren, onClose]);
+    if (isMega) onMegaClose();
+  }, [isMega, onMegaClose]);
 
   return (
     <div
@@ -60,64 +68,87 @@ const CategoryNavItem: React.FC<{
 
       <AnimatePresence>
         {hasChildren && isHovered && (
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15 }}
-            className="fixed left-0 right-0 top-[80px] z-50"
-          >
-            {/* Invisible bridge */}
-            <div className="absolute -top-2 left-0 right-0 h-2" />
+          isMega ? (
+            /* Full-width mega menu for 3-level categories */
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              className="fixed left-0 right-0 top-[80px] z-50"
+            >
+              <div className="absolute -top-2 left-0 right-0 h-2" />
 
-            <div className="w-full bg-warm-white backdrop-blur-md border-b border-rose-gold/10 shadow-lg">
-              <div className="max-w-screen-xl mx-auto px-8 py-6">
-                <div className="flex items-start justify-between gap-8">
-                  {/* Level 2: children as columns, Level 3: grandchildren as lists */}
-                  <div className="flex flex-wrap flex-1 divide-x divide-rose-gold/10">
-                  {category.children.map((child) => {
-                    const childPath = buildCategoryPath(child, category.slug);
-                    const hasGrandchildren =
-                      child.children && child.children.length > 0;
+              <div className="w-full bg-warm-white backdrop-blur-md border-b border-rose-gold/10 shadow-lg">
+                <div className="max-w-screen-xl mx-auto px-8 py-6">
+                  <div className="flex items-start justify-between gap-8">
+                    <div className="flex flex-wrap flex-1 divide-x divide-rose-gold/10">
+                      {category.children.map((child) => {
+                        const childPath = buildCategoryPath(child, category.slug);
+                        const childHasChildren =
+                          child.children && child.children.length > 0;
 
-                    return (
-                      <div key={child.id} className="min-w-[160px] px-6 first:pl-0 last:pr-0">
-                        <Link
-                          href={`/products/${childPath}`}
-                          className="block font-secondary text-base font-semibold tracking-wide capitalize text-charcoal hover:text-rose-gold transition-colors duration-150 mb-3"
-                        >
-                          {child.name}
-                        </Link>
-                        {hasGrandchildren && (
-                          <ul className="space-y-1.5">
-                            {child.children.map((grandchild) => (
-                              <li key={grandchild.id}>
-                                <Link
-                                  href={`/products/${buildCategoryPath(grandchild, childPath)}`}
-                                  className="block text-base text-charcoal/60 hover:text-rose-gold transition-colors duration-150 py-0.5 capitalize"
-                                >
-                                  {grandchild.name}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  })}
+                        return (
+                          <div key={child.id} className="min-w-[160px] px-6 first:pl-0 last:pr-0">
+                            <Link
+                              href={`/products/${childPath}`}
+                              className="block font-secondary text-base font-semibold tracking-wide capitalize text-charcoal hover:text-rose-gold transition-colors duration-150 mb-3"
+                            >
+                              {child.name}
+                            </Link>
+                            {childHasChildren && (
+                              <ul className="space-y-1.5">
+                                {child.children.map((grandchild) => (
+                                  <li key={grandchild.id}>
+                                    <Link
+                                      href={`/products/${buildCategoryPath(grandchild, childPath)}`}
+                                      className="block text-base text-charcoal/60 hover:text-rose-gold transition-colors duration-150 py-0.5 capitalize"
+                                    >
+                                      {grandchild.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <Link
+                      href="/products"
+                      className="flex-shrink-0 px-5 py-2.5 bg-rose-gold/10 hover:bg-rose-gold/20 text-charcoal font-secondary text-sm font-semibold tracking-wide uppercase rounded-sm transition-colors duration-150"
+                    >
+                      Kaikki tuotteet
+                    </Link>
                   </div>
-
-                  {/* "All products" link on the right */}
-                  <Link
-                    href="/products"
-                    className="flex-shrink-0 px-5 py-2.5 bg-rose-gold/10 hover:bg-rose-gold/20 text-charcoal font-secondary text-sm font-semibold tracking-wide uppercase rounded-sm transition-colors duration-150"
-                  >
-                    Kaikki tuotteet
-                  </Link>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          ) : (
+            /* Simple dropdown for 2-level categories */
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute left-0 top-full z-50"
+            >
+              <div className="h-2 w-full" />
+
+              <div className="min-w-[200px] bg-warm-white backdrop-blur-md border border-rose-gold/10 rounded-sm shadow-lg py-2">
+                {category.children.map((child) => (
+                  <Link
+                    key={child.id}
+                    href={`/products/${buildCategoryPath(child, category.slug)}`}
+                    className="block px-5 py-2 text-base text-charcoal/80 capitalize hover:text-rose-gold border-l-2 border-transparent hover:border-rose-gold transition-colors duration-150"
+                  >
+                    {child.name}
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          )
         )}
       </AnimatePresence>
     </div>
@@ -157,8 +188,8 @@ export function NavbarLinks({
           <CategoryNavItem
             key={category.id}
             category={category}
-            onOpen={handleOpen}
-            onClose={handleClose}
+            onMegaOpen={handleOpen}
+            onMegaClose={handleClose}
           />
         ))}
 
