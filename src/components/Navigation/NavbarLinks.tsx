@@ -79,30 +79,30 @@ const CategoryNavItem: React.FC<{
             >
               <div className="absolute -top-2 left-0 right-0 h-2" />
 
-              <div className="w-full bg-warm-white backdrop-blur-md border-b border-rose-gold/10 shadow-lg">
-                <div className="max-w-screen-xl mx-auto px-8 py-6">
-                  <div className="flex items-start justify-between gap-8">
-                    <div className="flex flex-wrap flex-1 divide-x divide-rose-gold/10">
+              <div className="w-full bg-warm-white border-t border-rose-gold/10 shadow-[0_8px_30px_-5px_rgba(0,0,0,0.08)]">
+                <div className="max-w-screen-xl mx-auto px-8 py-8">
+                  <div className="flex items-start justify-between gap-10">
+                    <div className="flex flex-wrap flex-1 divide-x divide-rose-gold/15">
                       {category.children.map((child) => {
                         const childPath = buildCategoryPath(child, category.slug);
                         const childHasChildren =
                           child.children && child.children.length > 0;
 
                         return (
-                          <div key={child.id} className="min-w-[160px] px-6 first:pl-0 last:pr-0">
+                          <div key={child.id} className="min-w-[170px] px-7 first:pl-0 last:pr-0">
                             <Link
                               href={`/products/${childPath}`}
-                              className="block font-secondary text-base font-semibold tracking-wide capitalize text-charcoal hover:text-rose-gold transition-colors duration-150 mb-3"
+                              className="inline-block font-secondary text-base font-semibold tracking-wide capitalize text-charcoal hover:text-rose-gold transition-colors duration-200 mb-4 pb-1 border-b-2 border-transparent hover:border-rose-gold/40"
                             >
                               {child.name}
                             </Link>
                             {childHasChildren && (
-                              <ul className="space-y-1.5">
+                              <ul className="space-y-2">
                                 {child.children.map((grandchild) => (
                                   <li key={grandchild.id}>
                                     <Link
                                       href={`/products/${buildCategoryPath(grandchild, childPath)}`}
-                                      className="block text-base text-charcoal/60 hover:text-rose-gold transition-colors duration-150 py-0.5 capitalize"
+                                      className="inline-block text-base text-charcoal/55 hover:text-rose-gold transition-all duration-200 py-0.5 capitalize decoration-rose-gold/30 underline-offset-4 hover:underline"
                                     >
                                       {grandchild.name}
                                     </Link>
@@ -117,7 +117,7 @@ const CategoryNavItem: React.FC<{
 
                     <Link
                       href="/products"
-                      className="flex-shrink-0 px-5 py-2.5 bg-rose-gold/10 hover:bg-rose-gold/20 text-charcoal font-secondary text-sm font-semibold tracking-wide uppercase rounded-sm transition-colors duration-150"
+                      className="flex-shrink-0 self-center px-6 py-3 bg-charcoal/5 hover:bg-rose-gold/15 text-charcoal font-secondary text-sm font-semibold tracking-wide uppercase rounded transition-all duration-200 hover:text-rose-gold"
                     >
                       Kaikki tuotteet
                     </Link>
@@ -136,12 +136,12 @@ const CategoryNavItem: React.FC<{
             >
               <div className="h-2 w-full" />
 
-              <div className="min-w-[200px] bg-warm-white backdrop-blur-md border border-rose-gold/10 rounded-sm shadow-lg py-2">
+              <div className="min-w-[200px] bg-warm-white border border-rose-gold/10 rounded shadow-[0_8px_30px_-5px_rgba(0,0,0,0.08)] py-3 px-2">
                 {category.children.map((child) => (
                   <Link
                     key={child.id}
                     href={`/products/${buildCategoryPath(child, category.slug)}`}
-                    className="block px-5 py-2 text-base text-charcoal/80 capitalize hover:text-rose-gold border-l-2 border-transparent hover:border-rose-gold transition-colors duration-150"
+                    className="inline-block w-full px-4 py-2 text-base text-charcoal/55 capitalize hover:text-rose-gold transition-all duration-200 decoration-rose-gold/30 underline-offset-4 hover:underline"
                   >
                     {child.name}
                   </Link>
