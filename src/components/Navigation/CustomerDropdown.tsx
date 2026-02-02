@@ -20,7 +20,7 @@ const CustomerDropdown = ({ user }: { user: Customer | null }) => {
           <User size={24} />
           <span className="sr-only">User menu</span>
         </Button>
-      </DropdownMenuTrigger>{" "}
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48" sideOffset={5}>
         {user ? (
           <>
