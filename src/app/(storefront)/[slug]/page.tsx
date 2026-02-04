@@ -5,9 +5,13 @@ import { storefront } from "@/lib/storefront";
 import type { PageBlock } from "@putiikkipalvelu/storefront-sdk";
 import { getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
 import { SEO_ENABLED } from "@/app/utils/constants";
+import dynamic from "next/dynamic";
 import Subtitle from "@/components/subtitle";
-import PhotoGallery from "@/components/Aboutpage/PhotoGallery";
 import AboutBlock from "@/components/Aboutpage/AboutBlock";
+
+const PhotoGallery = dynamic(
+  () => import("@/components/Aboutpage/PhotoGallery")
+);
 import ShowcaseBlock from "@/components/ShowcaseBlock";
 
 interface PageProps {

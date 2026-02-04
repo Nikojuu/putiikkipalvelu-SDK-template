@@ -10,9 +10,17 @@ import {
 import AddToCartButton from "@/components/Cart/AddToCartButton";
 import { getDisplayPriceSelectedProduct, isSaleActive } from "@/lib/utils";
 import { PriceDisplay } from "../PriceDisplay";
+import dynamic from "next/dynamic";
 import Breadcrumbs from "./Breadcrumbs";
-import { ImageSliderWithZoom } from "../imageSliderWithZoom";
 import { ImageSlider } from "../ImageSlider";
+
+const ImageSliderWithZoom = dynamic(
+  () =>
+    import("../imageSliderWithZoom").then((mod) => ({
+      default: mod.ImageSliderWithZoom,
+    })),
+  { loading: () => <ImageSlider images={[]} /> }
+);
 import type {
   ProductDetail as ProductDetailType,
   ProductVariation,

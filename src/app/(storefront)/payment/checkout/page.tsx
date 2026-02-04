@@ -1,6 +1,12 @@
-import StripeCheckoutPage from "@/components/Checkout/StripeCheckoutPage";
+import dynamic from "next/dynamic";
 import { Metadata } from "next";
-import PaytrailCheckoutPage from "@/components/Checkout/PaytrailCheckoutPage";
+
+const StripeCheckoutPage = dynamic(
+  () => import("@/components/Checkout/StripeCheckoutPage")
+);
+const PaytrailCheckoutPage = dynamic(
+  () => import("@/components/Checkout/PaytrailCheckoutPage")
+);
 import { getStoreConfig } from "@/lib/storeConfig";
 
 export const metadata: Metadata = {
