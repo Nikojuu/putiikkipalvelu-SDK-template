@@ -37,6 +37,10 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
   // Cart total after discount code (used for free shipping threshold)
   const cartTotalAfterDiscount = cartTotal - discountAmount;
+
+  // Ticket-only carts don't need shipping
+  const requiresShipping = cartItems.some((item) => !item.isTicket);
+
   const [isLoading, setIsLoading] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [shippingOptions, setShippingOptions] =
@@ -47,16 +51,47 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const [paytrailData, setPaytrailData] =
     useState<PaytrailCheckoutResponse | null>(null);
 
-  const steps = [
-    { number: 1, title: "Asiakastiedot" },
-    { number: 2, title: "Toimitustapa" },
-    { number: 3, title: "Maksutapa" },
-  ];
+  const steps = requiresShipping
+    ? [
+        { number: 1, title: "Asiakastiedot" },
+        { number: 2, title: "Toimitustapa" },
+        { number: 3, title: "Maksutapa" },
+      ]
+    : [
+        { number: 1, title: "Asiakastiedot" },
+        { number: 2, title: "Maksutapa" },
+      ];
 
   const handleCustomerDataSubmit = async (data: CustomerData) => {
     setIsLoading(true);
     setCustomerData(data);
     if (!data) {
+      return;
+    }
+
+    // Skip shipping for ticket-only carts — create Paytrail session directly
+    if (!requiresShipping) {
+      const result = await apiCreatePaytrailCheckoutSession(null, data);
+
+      if (result.success) {
+        setPaytrailData(result.data);
+        setStep(2);
+      } else {
+        console.error("Checkout failed:", result.error);
+        toast({
+          title: "Virhe maksun käsittelyssä",
+          description: result.error || "Tuntematon virhe",
+          className:
+            "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
+          action: (
+            <div className="flex items-center space-x-2">
+              <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
+            </div>
+          ),
+        });
+      }
+
+      setIsLoading(false);
       return;
     }
 
@@ -160,7 +195,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           />
         )}
 
-        {step === 2 && (
+        {step === 2 && requiresShipping && (
           <>
             <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
               <SelectShipmentMethod
@@ -194,6 +229,12 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
               </form>
             </div>
           </>
+        )}
+
+        {step === 2 && !requiresShipping && paytrailData && (
+          <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
+            <PaymentSelection paytrailData={paytrailData} />
+          </div>
         )}
 
         {step === 3 && paytrailData && (

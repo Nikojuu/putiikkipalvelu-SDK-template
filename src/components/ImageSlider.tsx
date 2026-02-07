@@ -14,6 +14,8 @@ export function ImageSlider({ images, productName }: iAppProps) {
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
+  if (images.length === 0) return null;
+
   // Derive loading state from loadedImages
   const isLoading = !loadedImages.has(mainImageIndex);
 

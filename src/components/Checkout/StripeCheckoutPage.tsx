@@ -38,6 +38,9 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   // Cart total after discount code (used for free shipping threshold)
   const cartTotalAfterDiscount = cartTotal - discountAmount;
 
+  // Ticket-only carts don't need shipping
+  const requiresShipping = cartItems.some((item) => !item.isTicket);
+
   const [isLoading, setIsLoading] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [shippingOptions, setShippingOptions] =
@@ -48,16 +51,37 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
   const router = useRouter();
 
-  const steps = [
-    { number: 1, title: "Asiakastiedot" },
-    { number: 2, title: "Toimitustapa" },
-    { number: 3, title: "Tilausvahvistus" },
-  ];
+  const steps = requiresShipping
+    ? [
+        { number: 1, title: "Asiakastiedot" },
+        { number: 2, title: "Toimitustapa" },
+        { number: 3, title: "Tilausvahvistus" },
+      ]
+    : [{ number: 1, title: "Asiakastiedot" }];
 
   const handleCustomerDataSubmit = async (data: CustomerData) => {
     setIsLoading(true);
     setCustomerData(data);
     if (!data) {
+      return;
+    }
+
+    // Skip shipping for ticket-only carts — go straight to Stripe
+    if (!requiresShipping) {
+      const result = await apiCreateStripeCheckoutSession(null, data);
+
+      if (result.success) {
+        router.push(result.data.url);
+      } else {
+        console.error("Checkout error:", result.error);
+        toast({
+          title: "Virhe",
+          description:
+            result.error || "Maksun käsittely epäonnistui. Yritä uudelleen.",
+          className: "bg-red-50 border-red-200",
+        });
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -160,7 +184,7 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
         />
       )}
 
-      {step === 2 && (
+      {step === 2 && requiresShipping && (
         <>
           <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
             <SelectShipmentMethod
@@ -222,6 +246,7 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           </div>
         </>
       )}
+
     </div>
   );
 };
