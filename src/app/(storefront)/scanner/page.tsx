@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { storefront } from "@/lib/storefront";
 import TicketScanner from "@/components/Scanner/TicketScanner";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Lippuskanneri",
   robots: "noindex, nofollow",
