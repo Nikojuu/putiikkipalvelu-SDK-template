@@ -5,6 +5,7 @@ import type {
   CheckoutCustomerData,
   CheckoutShipmentMethod,
   StripeCheckoutResponse,
+  TicketHolderData,
 } from "@putiikkipalvelu/storefront-sdk";
 import { StorefrontError } from "@putiikkipalvelu/storefront-sdk";
 import { cookies } from "next/headers";
@@ -16,7 +17,8 @@ export type StripeCheckoutResult =
 
 export async function apiCreateStripeCheckoutSession(
   chosenShipmentMethod: CheckoutShipmentMethod | null,
-  customerData: CheckoutCustomerData
+  customerData: CheckoutCustomerData,
+  ticketHolders?: Record<string, TicketHolderData[]>
 ): Promise<StripeCheckoutResult> {
   const cookieStore = await cookies();
   const cartId = cookieStore.get("cart-id")?.value;
@@ -31,6 +33,7 @@ export async function apiCreateStripeCheckoutSession(
         orderId,
         successUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success/${orderId}`,
         cancelUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/cancel/${orderId}`,
+        ...(ticketHolders && { ticketHolders }),
       },
       {
         cartId,

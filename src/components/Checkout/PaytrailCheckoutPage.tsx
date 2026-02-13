@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import CustomerDataForm from "@/components/Checkout/CustomerDataForm";
+import TicketHoldersForm from "@/components/Checkout/TicketHoldersForm";
 import { useCart } from "@/hooks/use-cart";
 import { CustomerData, customerDataSchema } from "@/lib/zodSchemas";
 import {
@@ -14,6 +15,7 @@ import {
   type Campaign,
   type ShipmentMethodsResponse,
   type PaytrailCheckoutResponse,
+  type TicketHolderData,
 } from "@putiikkipalvelu/storefront-sdk";
 import { useToast } from "@/hooks/use-toast";
 import { XCircle } from "lucide-react";
@@ -41,6 +43,12 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   // Ticket-only carts don't need shipping
   const requiresShipping = cartItems.some((item) => !item.isTicket);
 
+  // Check if any ticket requires holder names
+  const ticketItemsRequiringHolder = cartItems.filter(
+    (item) => item.isTicket && item.product.ticketInfo?.requiresHolder
+  );
+  const requiresHolders = ticketItemsRequiringHolder.length > 0;
+
   const [isLoading, setIsLoading] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [shippingOptions, setShippingOptions] =
@@ -50,22 +58,44 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     useState<ShipmentSelection | null>(null);
   const [paytrailData, setPaytrailData] =
     useState<PaytrailCheckoutResponse | null>(null);
+  const [ticketHolders, setTicketHolders] = useState<
+    Record<string, TicketHolderData[]> | undefined
+  >(undefined);
 
-  const steps = requiresShipping
-    ? [
-        { number: 1, title: "Asiakastiedot" },
-        { number: 2, title: "Toimitustapa" },
-        { number: 3, title: "Maksutapa" },
-      ]
-    : [
-        { number: 1, title: "Asiakastiedot" },
-        { number: 2, title: "Maksutapa" },
-      ];
+  // Build steps dynamically
+  const buildSteps = () => {
+    const s: { number: number; title: string }[] = [
+      { number: 1, title: "Asiakastiedot" },
+    ];
+    if (requiresHolders) {
+      s.push({ number: s.length + 1, title: "Lipun haltijat" });
+    }
+    if (requiresShipping) {
+      s.push({ number: s.length + 1, title: "Toimitustapa" });
+    }
+    s.push({ number: s.length + 1, title: "Maksutapa" });
+    return s;
+  };
+  const steps = buildSteps();
+
+  // Calculate which step number each phase is at
+  const holdersStep = requiresHolders ? 2 : -1;
+  const shippingStep = requiresShipping
+    ? (requiresHolders ? 3 : 2)
+    : -1;
+  const paymentStep = steps[steps.length - 1].number;
 
   const handleCustomerDataSubmit = async (data: CustomerData) => {
     setIsLoading(true);
     setCustomerData(data);
     if (!data) {
+      return;
+    }
+
+    // If holders needed, go to holders step
+    if (requiresHolders) {
+      setStep(holdersStep);
+      setIsLoading(false);
       return;
     }
 
@@ -75,7 +105,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
       if (result.success) {
         setPaytrailData(result.data);
-        setStep(2);
+        setStep(paymentStep);
       } else {
         console.error("Checkout failed:", result.error);
         toast({
@@ -96,7 +126,6 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     }
 
     // Fetch shipping options for the customer's postal code
-    // Pass campaigns and discountAmount for accurate free shipping calculation
     const result = await getShippingOptions(
       data.postal_code,
       cartItems,
@@ -106,7 +135,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
     if (result.success) {
       setShippingOptions(result.data);
-      setStep(2);
+      setStep(shippingStep);
     } else {
       toast({
         title: "Virhe haettaessa toimitustapoja",
@@ -120,6 +149,66 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
         ),
       });
       console.error("Error fetching shipping options:", result.error);
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleTicketHoldersSubmit = async (
+    holders: Record<string, TicketHolderData[]>
+  ) => {
+    setIsLoading(true);
+    setTicketHolders(holders);
+
+    // If no shipping, create Paytrail session directly
+    if (!requiresShipping) {
+      const validatedCustomerData = customerDataSchema.safeParse(customerData);
+      if (!validatedCustomerData.success) {
+        setIsLoading(false);
+        return;
+      }
+
+      const result = await apiCreatePaytrailCheckoutSession(
+        null,
+        validatedCustomerData.data,
+        holders
+      );
+
+      if (result.success) {
+        setPaytrailData(result.data);
+        setStep(paymentStep);
+      } else {
+        console.error("Checkout failed:", result.error);
+        toast({
+          title: "Virhe maksun käsittelyssä",
+          description: result.error || "Tuntematon virhe",
+          className:
+            "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
+        });
+      }
+
+      setIsLoading(false);
+      return;
+    }
+
+    // Fetch shipping options
+    const result = await getShippingOptions(
+      customerData!.postal_code,
+      cartItems,
+      campaigns,
+      discountAmount
+    );
+
+    if (result.success) {
+      setShippingOptions(result.data);
+      setStep(shippingStep);
+    } else {
+      toast({
+        title: "Virhe haettaessa toimitustapoja",
+        description: result.error || "Yritä myöhemmin uudestaan",
+        className:
+          "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
+      });
     }
 
     setIsLoading(false);
@@ -146,12 +235,13 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
     const result = await apiCreatePaytrailCheckoutSession(
       chosenShipmentMethod,
-      validatedCustomerData
+      validatedCustomerData,
+      ticketHolders
     );
 
     if (result.success) {
       setPaytrailData(result.data);
-      setStep(3);
+      setStep(paymentStep);
     } else {
       console.error("Checkout failed:", result.error);
       toast({
@@ -195,7 +285,16 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           />
         )}
 
-        {step === 2 && requiresShipping && (
+        {step === holdersStep && requiresHolders && (
+          <TicketHoldersForm
+            ticketItems={ticketItemsRequiringHolder}
+            onSubmit={handleTicketHoldersSubmit}
+            initialData={ticketHolders}
+            isLoading={isLoading}
+          />
+        )}
+
+        {step === shippingStep && requiresShipping && (
           <>
             <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
               <SelectShipmentMethod
@@ -231,13 +330,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           </>
         )}
 
-        {step === 2 && !requiresShipping && paytrailData && (
-          <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
-            <PaymentSelection paytrailData={paytrailData} />
-          </div>
-        )}
-
-        {step === 3 && paytrailData && (
+        {step === paymentStep && paytrailData && (
           <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
             <PaymentSelection paytrailData={paytrailData} />
           </div>

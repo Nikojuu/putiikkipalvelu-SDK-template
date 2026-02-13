@@ -31,6 +31,7 @@
     "@radix-ui/react-toast": "^1.2.2",
     "@react-email/components": "^0.0.29",
     "@tailwindcss/typography": "^0.5.19",
+    "@yudiel/react-qr-scanner": "^2.5.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
