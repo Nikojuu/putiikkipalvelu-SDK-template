@@ -1,11 +1,18 @@
 import type { PageBlock } from "@putiikkipalvelu/storefront-sdk";
+import DOMPurify from "isomorphic-dompurify";
+import dynamic from "next/dynamic";
 import Hero from "@/components/Hero";
 import Subtitle from "@/components/subtitle";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCarousel } from "@/components/Product/ProductCarousel";
 import ShowcaseBlock from "@/components/ShowcaseBlock";
 import CtaSection from "@/components/Homepage/CtaSection";
+import AboutBlock from "@/components/Aboutpage/AboutBlock";
 import { storefront } from "@/lib/storefront";
+
+const PhotoGallery = dynamic(
+  () => import("@/components/Aboutpage/PhotoGallery")
+);
 
 export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
   switch (block.type) {
@@ -22,9 +29,7 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
 
     case "latest_products": {
       const count = block.data.count ?? 6;
-      const latestProducts = await storefront.products.latest(count, {
-        next: { revalidate: 3600 },
-      });
+      const latestProducts = await storefront.products.latest(count);
 
       return (
         <section className="relative py-8 bg-gradient-to-b from-warm-white via-cream/20 to-warm-white">
@@ -94,6 +99,85 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
           secondaryButtonText={block.data.secondaryButtonText}
           secondaryButtonLink={block.data.secondaryButtonLink}
         />
+      );
+
+    case "markdown": {
+      if (!block.data.content) return null;
+      const clean = DOMPurify.sanitize(block.data.content);
+      return (
+        <section className="container mx-auto px-4 max-w-4xl py-8">
+          <div
+            className="prose max-w-none"
+            dangerouslySetInnerHTML={{ __html: clean }}
+          />
+        </section>
+      );
+    }
+
+    case "accordion":
+      return (
+        <section className="container mx-auto px-4 max-w-4xl py-8">
+          <div className="space-y-3">
+            {block.data.title && (
+              <h2 className="text-2xl font-semibold mb-4">
+                {block.data.title}
+              </h2>
+            )}
+            {block.data.description && (
+              <p className="text-muted-foreground mb-4">
+                {block.data.description}
+              </p>
+            )}
+            {block.data.items.map((item) => (
+              <details key={item.id} className="border rounded-lg p-4">
+                <summary className="font-medium cursor-pointer">
+                  {item.question}
+                </summary>
+                <div
+                  className="mt-2 text-muted-foreground prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(item.answer),
+                  }}
+                />
+              </details>
+            ))}
+          </div>
+        </section>
+      );
+
+    case "gallery":
+      return (
+        <section className="container mx-auto px-4 max-w-6xl py-8">
+          <PhotoGallery items={block.data.items} />
+        </section>
+      );
+
+    case "about":
+      return (
+        <section className="py-8">
+          {block.data.imageUrl ? (
+            <AboutBlock
+              blockInfo={{
+                imgSrc: block.data.imageUrl,
+                title: block.data.title,
+                text: block.data.description,
+                reverse: block.data.imagePosition === "right",
+              }}
+            />
+          ) : (
+            <div className="max-w-screen-xl mx-auto px-4 sm:px-8">
+              <h2 className="font-primary text-2xl md:text-3xl font-bold text-charcoal mb-4">
+                {block.data.title}
+              </h2>
+              <div
+                className="prose max-w-none"
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(block.data.description),
+                }}
+              />
+            </div>
+          )}
+        </section>
       );
 
     default:

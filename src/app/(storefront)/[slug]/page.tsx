@@ -24,9 +24,7 @@ export async function generateMetadata({
   const { slug } = await params;
 
   try {
-    const page = await storefront.pages.getBySlug(slug, {
-      next: { revalidate: 60, tags: ["page", slug] },
-    });
+    const page = await storefront.pages.getBySlug(slug);
 
     const seo = page.seo;
     const domain = getSEOValue(seo?.domain, SEO_FALLBACKS.domain);
@@ -81,9 +79,7 @@ export default async function CmsPage({ params }: PageProps) {
 
   let page;
   try {
-    page = await storefront.pages.getBySlug(slug, {
-      next: { revalidate: 60, tags: ["page", slug] },
-    });
+    page = await storefront.pages.getBySlug(slug);
   } catch {
     notFound();
   }
