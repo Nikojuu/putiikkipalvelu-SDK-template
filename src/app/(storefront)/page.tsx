@@ -5,9 +5,7 @@ import { HomepageBlockRenderer } from "@/components/Homepage/HomepageBlockRender
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const page = await storefront.pages.getBySlug("homepage", {
-      next: { revalidate: 3600, tags: ["page", "homepage"] },
-    });
+    const page = await storefront.pages.getBySlug("homepage");
 
     const storeName = page.storeName;
     const seo = page.seo;
@@ -38,14 +36,10 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export const revalidate = 3600;
-
 export default async function Home() {
   let page;
   try {
-    page = await storefront.pages.getBySlug("homepage", {
-      next: { revalidate: 3600, tags: ["page", "homepage"] },
-    });
+    page = await storefront.pages.getBySlug("homepage");
   } catch {
     // Homepage page not found — render empty
     return <main className="bg-warm-white" />;
