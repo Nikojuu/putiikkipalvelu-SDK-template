@@ -10,6 +10,7 @@ import CtaSection from "@/components/Homepage/CtaSection";
 import AboutBlock from "@/components/Aboutpage/AboutBlock";
 import CarouselContentBlock from "@/components/CarouselContentBlock";
 import { storefront } from "@/lib/storefront";
+import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
 
 const PhotoGallery = dynamic(
   () => import("@/components/Aboutpage/PhotoGallery")
@@ -189,6 +190,16 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
               />
             </div>
           )}
+        </section>
+      );
+
+    case "opening_hours":
+      return (
+        <section className="container mx-auto px-4 max-w-4xl py-8">
+          <OpeningHoursCalendar
+            title={block.data.title}
+            days={block.data.days}
+          />
         </section>
       );
 

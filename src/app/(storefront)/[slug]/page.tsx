@@ -14,6 +14,7 @@ const PhotoGallery = dynamic(
   () => import("@/components/Aboutpage/PhotoGallery")
 );
 import ShowcaseBlock from "@/components/ShowcaseBlock";
+import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -183,6 +184,14 @@ function BlockRenderer({ block }: { block: PageBlock }) {
           title={block.data.title}
           description={block.data.description}
           items={block.data.items}
+        />
+      );
+
+    case "opening_hours":
+      return (
+        <OpeningHoursCalendar
+          title={block.data.title}
+          days={block.data.days}
         />
       );
 
