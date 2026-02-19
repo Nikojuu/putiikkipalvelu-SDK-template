@@ -8,6 +8,7 @@ import { ProductCarousel } from "@/components/Product/ProductCarousel";
 import ShowcaseBlock from "@/components/ShowcaseBlock";
 import CtaSection from "@/components/Homepage/CtaSection";
 import AboutBlock from "@/components/Aboutpage/AboutBlock";
+import CarouselContentBlock from "@/components/CarouselContentBlock";
 import { storefront } from "@/lib/storefront";
 
 const PhotoGallery = dynamic(
@@ -149,6 +150,17 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
       return (
         <section className="container mx-auto px-4 max-w-6xl py-8">
           <PhotoGallery items={block.data.items} />
+        </section>
+      );
+
+    case "carousel_content":
+      return (
+        <section className="py-8">
+          <CarouselContentBlock
+            content={block.data.content}
+            items={block.data.items}
+            contentPosition={block.data.contentPosition}
+          />
         </section>
       );
 

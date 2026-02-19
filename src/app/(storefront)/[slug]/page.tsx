@@ -8,6 +8,7 @@ import { SEO_ENABLED } from "@/app/utils/constants";
 import dynamic from "next/dynamic";
 import Subtitle from "@/components/subtitle";
 import AboutBlock from "@/components/Aboutpage/AboutBlock";
+import CarouselContentBlock from "@/components/CarouselContentBlock";
 
 const PhotoGallery = dynamic(
   () => import("@/components/Aboutpage/PhotoGallery")
@@ -141,6 +142,15 @@ function BlockRenderer({ block }: { block: PageBlock }) {
     case "gallery":
       return (
         <PhotoGallery items={block.data.items} />
+      );
+
+    case "carousel_content":
+      return (
+        <CarouselContentBlock
+          content={block.data.content}
+          items={block.data.items}
+          contentPosition={block.data.contentPosition}
+        />
       );
 
     case "about":
