@@ -36,7 +36,7 @@ export default function CarouselContentBlock({
   const sorted = [...items].sort((a, b) => a.order - b.order);
 
   return (
-    <section
+    <div
       ref={ref}
       className={`mx-auto mb-20 md:mb-32 flex w-full max-w-screen-xl flex-col px-4 sm:px-8 lg:flex-row lg:items-center gap-8 lg:gap-0 ${
         reverse ? "lg:flex-row-reverse" : ""
@@ -126,6 +126,6 @@ export default function CarouselContentBlock({
           <div className="mt-8 h-[1px] bg-gradient-to-r from-rose-gold/40 via-champagne/30 to-transparent max-w-32" />
         </div>
       </motion.div>
-    </section>
+    </div>
   );
 }
