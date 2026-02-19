@@ -8,7 +8,9 @@ import { ProductCarousel } from "@/components/Product/ProductCarousel";
 import ShowcaseBlock from "@/components/ShowcaseBlock";
 import CtaSection from "@/components/Homepage/CtaSection";
 import AboutBlock from "@/components/Aboutpage/AboutBlock";
+import CarouselContentBlock from "@/components/CarouselContentBlock";
 import { storefront } from "@/lib/storefront";
+import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
 
 const PhotoGallery = dynamic(
   () => import("@/components/Aboutpage/PhotoGallery")
@@ -152,6 +154,17 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
         </section>
       );
 
+    case "carousel_content":
+      return (
+        <section className="py-8">
+          <CarouselContentBlock
+            content={block.data.content}
+            items={block.data.items}
+            contentPosition={block.data.contentPosition}
+          />
+        </section>
+      );
+
     case "about":
       return (
         <section className="py-8">
@@ -177,6 +190,16 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
               />
             </div>
           )}
+        </section>
+      );
+
+    case "opening_hours":
+      return (
+        <section className="container mx-auto px-4 max-w-4xl py-8">
+          <OpeningHoursCalendar
+            title={block.data.title}
+            days={block.data.days}
+          />
         </section>
       );
 

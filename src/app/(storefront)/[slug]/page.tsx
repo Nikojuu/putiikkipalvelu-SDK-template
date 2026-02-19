@@ -8,11 +8,13 @@ import { SEO_ENABLED } from "@/app/utils/constants";
 import dynamic from "next/dynamic";
 import Subtitle from "@/components/subtitle";
 import AboutBlock from "@/components/Aboutpage/AboutBlock";
+import CarouselContentBlock from "@/components/CarouselContentBlock";
 
 const PhotoGallery = dynamic(
   () => import("@/components/Aboutpage/PhotoGallery")
 );
 import ShowcaseBlock from "@/components/ShowcaseBlock";
+import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -143,6 +145,15 @@ function BlockRenderer({ block }: { block: PageBlock }) {
         <PhotoGallery items={block.data.items} />
       );
 
+    case "carousel_content":
+      return (
+        <CarouselContentBlock
+          content={block.data.content}
+          items={block.data.items}
+          contentPosition={block.data.contentPosition}
+        />
+      );
+
     case "about":
       return block.data.imageUrl ? (
         <AboutBlock
@@ -173,6 +184,14 @@ function BlockRenderer({ block }: { block: PageBlock }) {
           title={block.data.title}
           description={block.data.description}
           items={block.data.items}
+        />
+      );
+
+    case "opening_hours":
+      return (
+        <OpeningHoursCalendar
+          title={block.data.title}
+          days={block.data.days}
         />
       );
 
