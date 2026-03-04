@@ -1,6 +1,10 @@
 import { CollectionPage, WithContext } from "schema-dts";
 import type { Product } from "@putiikkipalvelu/storefront-sdk";
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").trim();
+}
+
 interface CollectionPageSchemaProps {
   name: string;
   description?: string;
@@ -37,7 +41,7 @@ export default function CollectionPageSchema({
             "@type": "Product" as const,
             "@id": `${storeDomain}/product/${product.slug}`,
             name: product.name,
-            description: product.description,
+            description: stripHtml(product.description),
             image: product.images?.[0] || [],
             url: `${storeDomain}/product/${product.slug}`,
             offers: {
