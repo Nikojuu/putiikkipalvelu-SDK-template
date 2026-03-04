@@ -26,6 +26,7 @@ import type {
   ProductVariation,
 } from "@putiikkipalvelu/storefront-sdk";
 import WishlistButton from "./WishlistButton";
+import DOMPurify from "isomorphic-dompurify";
 
 const ProductDetail = ({ product }: { product: ProductDetailType }) => {
   const hasVariations = product.variations?.length > 0;
@@ -129,9 +130,12 @@ const ProductDetail = ({ product }: { product: ProductDetailType }) => {
               <span className="text-xs tracking-[0.2em] uppercase font-secondary text-charcoal/50 block mb-3">
                 Kuvaus
               </span>
-              <p className="text-sm md:text-base font-secondary text-charcoal/70 leading-relaxed">
-                {product.description}
-              </p>
+              <div
+                className="prose prose-sm md:prose-base font-secondary text-charcoal/70 leading-relaxed max-w-none"
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(product.description),
+                }}
+              />
             </div>
           )}
 
@@ -162,9 +166,12 @@ const ProductDetail = ({ product }: { product: ProductDetailType }) => {
                   <span className="text-xs tracking-[0.2em] uppercase font-secondary text-charcoal/50 block mb-3">
                     Kuvaus
                   </span>
-                  <p className="text-sm md:text-base font-secondary text-charcoal/70 leading-relaxed">
-                    {selectedVariation.description}
-                  </p>
+                  <div
+                    className="prose prose-sm md:prose-base font-secondary text-charcoal/70 leading-relaxed max-w-none"
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(selectedVariation.description),
+                    }}
+                  />
                 </div>
               )}
 

@@ -195,6 +195,93 @@ function BlockRenderer({ block }: { block: PageBlock }) {
         />
       );
 
+    case "image_grid": {
+      const gridCols =
+        block.data.columns === 2
+          ? "sm:grid-cols-2"
+          : block.data.columns === 3
+            ? "sm:grid-cols-3"
+            : "sm:grid-cols-4";
+      return (
+        <div>
+          {block.data.title && (
+            <h2 className="text-2xl font-semibold mb-4">
+              {block.data.title}
+            </h2>
+          )}
+          <div className={`grid grid-cols-1 ${gridCols} gap-6`}>
+            {[...block.data.items]
+              .sort((a, b) => a.order - b.order)
+              .map((item) => (
+                <div key={item.id}>
+                  {item.imageUrl && (
+                    <img
+                      src={item.imageUrl}
+                      alt=""
+                      className="rounded-lg w-full aspect-4/3 object-cover mb-3"
+                    />
+                  )}
+                  {item.content && (
+                    <div
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(item.content),
+                      }}
+                    />
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
+      );
+    }
+
+    case "text_grid": {
+      const textGridCols =
+        block.data.columns === 2
+          ? "sm:grid-cols-2"
+          : block.data.columns === 3
+            ? "sm:grid-cols-3"
+            : block.data.columns === 4
+              ? "sm:grid-cols-4"
+              : block.data.columns === 5
+                ? "sm:grid-cols-5"
+                : "sm:grid-cols-6";
+      return (
+        <div>
+          {block.data.title && (
+            <h2 className="text-2xl font-semibold mb-2">
+              {block.data.title}
+            </h2>
+          )}
+          {block.data.description && (
+            <p className="text-muted-foreground mb-4">
+              {block.data.description}
+            </p>
+          )}
+          <div className={`grid grid-cols-1 ${textGridCols} gap-6`}>
+            {[...block.data.items]
+              .sort((a, b) => a.order - b.order)
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-lg border p-4"
+                >
+                  {item.content && (
+                    <div
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(item.content),
+                      }}
+                    />
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
+      );
+    }
+
     default:
       return null;
   }

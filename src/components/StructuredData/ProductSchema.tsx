@@ -1,6 +1,10 @@
 import { Product, WithContext } from "schema-dts";
 import type { ProductDetail } from "@putiikkipalvelu/storefront-sdk";
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").trim();
+}
+
 interface ProductSchemaProps {
   product: ProductDetail;
   storeName: string;
@@ -57,7 +61,7 @@ export default function ProductSchema({ product, storeName, storeDomain }: Produ
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description || product.metaDescription || "",
+    description: stripHtml(product.description || product.metaDescription || ""),
     image: product.images || [],
     brand: {
       "@type": "Brand",
