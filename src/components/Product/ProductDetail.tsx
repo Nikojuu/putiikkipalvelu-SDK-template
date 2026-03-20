@@ -26,7 +26,7 @@ import type {
   ProductVariation,
 } from "@putiikkipalvelu/storefront-sdk";
 import WishlistButton from "./WishlistButton";
-import DOMPurify from "isomorphic-dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 const ProductDetail = ({ product }: { product: ProductDetailType }) => {
   const hasVariations = product.variations?.length > 0;
@@ -133,7 +133,7 @@ const ProductDetail = ({ product }: { product: ProductDetailType }) => {
               <div
                 className="prose prose-sm md:prose-base font-secondary text-charcoal/70 leading-relaxed max-w-none"
                 dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(product.description),
+                  __html: sanitizeHtml(product.description),
                 }}
               />
             </div>
@@ -169,7 +169,7 @@ const ProductDetail = ({ product }: { product: ProductDetailType }) => {
                   <div
                     className="prose prose-sm md:prose-base font-secondary text-charcoal/70 leading-relaxed max-w-none"
                     dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(selectedVariation.description),
+                      __html: sanitizeHtml(selectedVariation.description),
                     }}
                   />
                 </div>

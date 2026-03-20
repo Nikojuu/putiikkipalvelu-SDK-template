@@ -10,6 +10,7 @@ import { getStoreConfig, getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
 import OrganizationSchema from "@/components/StructuredData/OrganizationSchema";
 import LocalBusinessSchema from "@/components/StructuredData/LocalBusinessSchema";
 import { SEO_ENABLED } from "@/app/utils/constants";
+import Script from "next/script";
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -57,6 +58,9 @@ export async function generateMetadata(): Promise<Metadata> {
         images: [twitterImage],
         ...(twitterHandle && { site: twitterHandle, creator: twitterHandle }),
       },
+      alternates: {
+        canonical: "/",
+      },
       ...(config.seo.googleVerificationCode
         ? {
             verification: {
@@ -70,7 +74,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
     // Fallback metadata if API fails
     return {
-      metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"),
+      metadataBase: new URL(SEO_FALLBACKS.domain),
       title: SEO_FALLBACKS.title,
       description: SEO_FALLBACKS.description,
       robots: "noindex, nofollow",
@@ -100,6 +104,7 @@ export default async function RootLayout({
   const logoUrl = storeConfig.store.logoUrl || SEO_FALLBACKS.logoUrl;
   const storeName = storeConfig.store.name;
   const instagramUrl = storeConfig.seo.instagramUrl;
+  const analytics = storeConfig.analytics;
 
   return (
     <html
@@ -110,6 +115,14 @@ export default async function RootLayout({
       <head>
         <OrganizationSchema />
         <LocalBusinessSchema />
+        {analytics?.umamiWebsiteId && analytics.umamiScriptUrl && (
+          <Script
+            defer
+            src={analytics.umamiScriptUrl}
+            data-website-id={analytics.umamiWebsiteId}
+            strategy="afterInteractive"
+          />
+        )}
       </head>
 
       <body className="bg-warm-white">

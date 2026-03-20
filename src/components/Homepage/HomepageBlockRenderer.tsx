@@ -1,5 +1,5 @@
 import type { PageBlock } from "@putiikkipalvelu/storefront-sdk";
-import DOMPurify from "isomorphic-dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 import dynamic from "next/dynamic";
 import Hero from "@/components/Hero";
 import Subtitle from "@/components/subtitle";
@@ -105,7 +105,7 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
 
     case "markdown": {
       if (!block.data.content) return null;
-      const clean = DOMPurify.sanitize(block.data.content);
+      const clean = sanitizeHtml(block.data.content);
       return (
         <section className="container mx-auto px-4 max-w-4xl py-8">
           <div
@@ -138,7 +138,7 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
                 <div
                   className="mt-2 text-muted-foreground prose prose-sm max-w-none"
                   dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(item.answer),
+                    __html: sanitizeHtml(item.answer),
                   }}
                 />
               </details>
@@ -185,7 +185,7 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
               <div
                 className="prose max-w-none"
                 dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(block.data.description),
+                  __html: sanitizeHtml(block.data.description),
                 }}
               />
             </div>

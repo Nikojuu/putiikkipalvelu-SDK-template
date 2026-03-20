@@ -4,7 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRef } from "react";
 import { useInView } from "framer-motion";
-import DOMPurify from "isomorphic-dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 type AboutBlockType = {
   imgSrc: string;
@@ -97,7 +97,7 @@ const AboutBlock = ({ blockInfo }: { blockInfo: AboutBlockType }) => {
           <div
             className="prose prose-sm md:prose-base prose-p:leading-relaxed prose-p:text-charcoal/70 prose-p:font-secondary max-w-none"
             dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(blockInfo.text),
+              __html: sanitizeHtml(blockInfo.text),
             }}
           />
 

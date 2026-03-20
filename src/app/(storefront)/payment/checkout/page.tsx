@@ -7,7 +7,7 @@ const StripeCheckoutPage = dynamic(
 const PaytrailCheckoutPage = dynamic(
   () => import("@/components/Checkout/PaytrailCheckoutPage")
 );
-import { getStoreConfig } from "@/lib/storeConfig";
+import { storefront } from "@/lib/storefront";
 
 export const metadata: Metadata = {
   title: "Pupun Korvat | Tilaus",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 const CheckoutRoute = async () => {
-  const storeConfig = await getStoreConfig();
+  const storeConfig = await storefront.store.getConfig();
   const campaigns = storeConfig.campaigns;
   const paymentMethods = storeConfig.payments.methods;
 

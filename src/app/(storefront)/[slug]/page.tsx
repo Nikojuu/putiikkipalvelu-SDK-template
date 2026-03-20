@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import DOMPurify from "isomorphic-dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { storefront } from "@/lib/storefront";
 import type { PageBlock } from "@putiikkipalvelu/storefront-sdk";
 import { getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
@@ -104,7 +104,7 @@ function BlockRenderer({ block }: { block: PageBlock }) {
   switch (block.type) {
     case "markdown": {
       if (!block.data.content) return null;
-      const clean = DOMPurify.sanitize(block.data.content);
+      const clean = sanitizeHtml(block.data.content);
       return (
         <div
           className="prose max-w-none"
@@ -132,7 +132,7 @@ function BlockRenderer({ block }: { block: PageBlock }) {
               <div
                 className="mt-2 text-muted-foreground prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(item.answer),
+                  __html: sanitizeHtml(item.answer),
                 }}
               />
             </details>
@@ -172,7 +172,7 @@ function BlockRenderer({ block }: { block: PageBlock }) {
           <div
             className="prose max-w-none"
             dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(block.data.description),
+              __html: sanitizeHtml(block.data.description),
             }}
           />
         </div>
@@ -225,7 +225,7 @@ function BlockRenderer({ block }: { block: PageBlock }) {
                     <div
                       className="prose prose-sm max-w-none"
                       dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(item.content),
+                        __html: sanitizeHtml(item.content),
                       }}
                     />
                   )}
@@ -271,7 +271,7 @@ function BlockRenderer({ block }: { block: PageBlock }) {
                     <div
                       className="prose prose-sm max-w-none"
                       dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(item.content),
+                        __html: sanitizeHtml(item.content),
                       }}
                     />
                   )}

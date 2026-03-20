@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Disable streaming metadata to prevent duplicate meta tags in <head>
+  // See: https://nextjs.org/docs/app/api-reference/functions/generate-metadata#streaming-metadata
+  htmlLimitedBots: /.*/,
   // Transpile the linked SDK package
   transpilePackages: ["@putiikkipalvelu/storefront-sdk"],
   images: {

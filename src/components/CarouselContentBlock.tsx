@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import DOMPurify from "isomorphic-dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 import {
   Carousel,
   CarouselContent,
@@ -118,7 +118,7 @@ export default function CarouselContentBlock({
           <div
             className="prose prose-sm md:prose-base prose-p:leading-relaxed prose-p:text-charcoal/70 prose-p:font-secondary max-w-none"
             dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(content),
+              __html: sanitizeHtml(content),
             }}
           />
 

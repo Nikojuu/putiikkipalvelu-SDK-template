@@ -48,6 +48,9 @@ export async function generateMetadata({
     }
 
     const categoryUrl = `${domain}/products/${slugs.join("/")}`;
+    const ogImage = getSEOValue(config.seo.openGraphImageUrl, SEO_FALLBACKS.openGraphImage);
+    const twitterImage = getSEOValue(config.seo.twitterImageUrl, SEO_FALLBACKS.twitterImage);
+    const twitterHandle = config.seo.twitterHandle;
 
     // Use custom SEO fields if set, otherwise fall back to auto-generated
     const title = metaTitle || `${config.store.name} | ${categoryName}`;
@@ -64,6 +67,14 @@ export async function generateMetadata({
         description,
         url: categoryUrl,
         siteName: config.store.name,
+        images: [
+          {
+            url: ogImage,
+            width: 1200,
+            height: 630,
+            alt: config.seo.ogImageAlt || title,
+          },
+        ],
         locale: "fi_FI",
         type: "website",
       },
@@ -71,6 +82,8 @@ export async function generateMetadata({
         card: "summary_large_image",
         title,
         description,
+        images: [twitterImage],
+        ...(twitterHandle && { site: twitterHandle, creator: twitterHandle }),
       },
     };
   } catch (error) {
