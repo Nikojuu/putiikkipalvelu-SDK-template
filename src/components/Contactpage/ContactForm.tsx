@@ -28,7 +28,7 @@ const FormSchema = z.object({
   message: z.string().min(5, "Message must be at least 5 characters long"),
 });
 
-export default function ContactForm() {
+export default function ContactForm({ storeEmail }: { storeEmail: string }) {
   const [formStatus, setFormStatus] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -217,7 +217,7 @@ export default function ContactForm() {
             Voit myös lähettää sähköpostia suoraan
           </p>
           <a
-            href="mailto:pupunkorvat.kauppa@gmail.com"
+            href={`mailto:${storeEmail}`}
             className="inline-flex items-center gap-2 text-charcoal hover:text-rose-gold transition-colors duration-300 font-secondary"
           >
             <svg
@@ -233,7 +233,7 @@ export default function ContactForm() {
                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
               />
             </svg>
-            <span>pupunkorvat.kauppa@gmail.com</span>
+            <span>{storeEmail}</span>
           </a>
         </div>
       </div>

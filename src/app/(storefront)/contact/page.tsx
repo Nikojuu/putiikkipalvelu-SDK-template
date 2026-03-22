@@ -56,8 +56,10 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-const ContactRoute = () => {
-  return <ContactForm />;
+const ContactRoute = async () => {
+  const config = await getStoreConfig();
+
+  return <ContactForm storeEmail={config.store.email} />;
 };
 
 export default ContactRoute;

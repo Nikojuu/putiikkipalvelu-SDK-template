@@ -4,7 +4,7 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import Link from "next/link";
 
-export const AboutCTA = () => {
+export const AboutCTA = ({ storeEmail }: { storeEmail: string }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
@@ -124,7 +124,7 @@ export const AboutCTA = () => {
           </Link>
 
           <Link
-            href="mailto:pupunkorvat.kauppa@gmail.com"
+            href={`mailto:${storeEmail}`}
             className="group inline-flex items-center gap-3 px-8 py-4 border border-warm-white/30 text-warm-white font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:border-rose-gold hover:text-rose-gold"
           >
             <span>Ota yhteyttä</span>

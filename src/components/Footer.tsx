@@ -1,14 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import { InstagramLogoIcon } from "@radix-ui/react-icons";
+import { Mail, Phone } from "lucide-react";
 
 interface FooterProps {
   logoUrl: string;
   storeName: string;
+  email?: string | null;
+  phone?: string | null;
   instagramUrl?: string | null;
 }
 
-export function Footer({ logoUrl, storeName, instagramUrl }: FooterProps) {
+export function Footer({ logoUrl, storeName, email, phone, instagramUrl }: FooterProps) {
   // Extract Instagram handle from URL for display
   const instagramHandle = instagramUrl
     ? instagramUrl.split("/").filter(Boolean).pop() || storeName.toLowerCase().replace(/\s+/g, "_")
@@ -48,6 +51,28 @@ export function Footer({ logoUrl, storeName, instagramUrl }: FooterProps) {
             <p className="text-warm-white/60 font-secondary text-sm text-center md:text-left max-w-xs leading-relaxed">
               Laadukkaat tuotteet ja moderni ostoskokemus.
             </p>
+            {(email || phone) && (
+              <div className="flex flex-col gap-2">
+                {email && (
+                  <a
+                    href={`mailto:${email}`}
+                    className="flex items-center gap-2 text-sm font-secondary text-warm-white/50 hover:text-rose-gold transition-colors duration-300"
+                  >
+                    <Mail className="w-4 h-4 flex-shrink-0" />
+                    <span>{email}</span>
+                  </a>
+                )}
+                {phone && (
+                  <a
+                    href={`tel:${phone.replace(/\s+/g, "")}`}
+                    className="flex items-center gap-2 text-sm font-secondary text-warm-white/50 hover:text-rose-gold transition-colors duration-300"
+                  >
+                    <Phone className="w-4 h-4 flex-shrink-0" />
+                    <span>{phone}</span>
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Navigation Links */}
