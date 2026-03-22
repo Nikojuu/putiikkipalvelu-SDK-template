@@ -16,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all products using SDK
   const fetchProducts = async () => {
     try {
-      const data = await storefront.products.filtered(
+      const data = await storefront.products.sorted(
         {
           slugs: ["all-products"],
           page: 1,
