@@ -8,17 +8,19 @@ type SortOption = {
   value: string;
 };
 
-const sortOptions: SortOption[] = [
-  { label: "Uusimmat", value: "newest" },
-  { label: "Hinta: Alhaisin", value: "price_asc" },
-  { label: "Hinta: Korkein", value: "price_desc" },
-  { label: "Suosituimmat", value: "popularity" },
-];
-
 export function SortOptions() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentSort = searchParams.get("sort") || "newest";
+  const hasSearchQuery = !!searchParams.get("q");
+  const currentSort = searchParams.get("sort") || (hasSearchQuery ? "relevance" : "newest");
+
+  const sortOptions: SortOption[] = [
+    ...(hasSearchQuery ? [{ label: "Osuvuus", value: "relevance" }] : []),
+    { label: "Uusimmat", value: "newest" },
+    { label: "Hinta: Alhaisin", value: "price_asc" },
+    { label: "Hinta: Korkein", value: "price_desc" },
+    { label: "Suosituimmat", value: "popularity" },
+  ];
 
   const createQueryString = (name: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());

@@ -1,5 +1,6 @@
 
 import { PaginationComponent } from "@/components/Product/Pagination";
+import { SearchInput } from "@/components/Product/SearchInput";
 import { SortOptions } from "@/components/Product/SortOptions";
 import { ProductCard } from "@/components/ProductCard";
 import Subtitle from "@/components/subtitle";
@@ -104,7 +105,7 @@ const ProductsPage = async ({
   searchParams,
 }: {
   params: Promise<{ slug?: string[] }>;
-  searchParams: Promise<{ page?: string; sort?: string }>;
+  searchParams: Promise<{ page?: string; sort?: string; q?: string }>;
 }) => {
   noStore();
   const { slug } = await params;
@@ -112,7 +113,8 @@ const ProductsPage = async ({
   const slugs = slug ?? ["all-products"];
   const pageSize = 12;
   const currentPage = Number(resolvedSearchParams.page) || 1;
-  const sort = (resolvedSearchParams.sort as ProductSortOption) || "newest";
+  const searchQuery = resolvedSearchParams.q?.trim() || "";
+  const sort = (resolvedSearchParams.sort as ProductSortOption) || (searchQuery ? "relevance" : "newest");
 
   // Get store config from backend
   const config = await getStoreConfig();
@@ -124,6 +126,7 @@ const ProductsPage = async ({
     page: currentPage,
     pageSize,
     sort,
+    query: searchQuery || undefined,
   });
 
   const products: Product[] = productPageData?.products as Product[];
@@ -160,10 +163,13 @@ const ProductsPage = async ({
         </>
       )}
       <section className="pt-8 md:pt-16 container mx-auto px-4 bg-warm-white">
-        <Subtitle subtitle={categoryName || "Tuotteet"} as="h1" />
+        <Subtitle subtitle={searchQuery ? `Hakutulokset: "${searchQuery}"` : (categoryName || "Tuotteet")} as="h1" />
         {products && products.length > 0 ? (
           <>
-            <div className="max-w-screen-xl mx-auto flex justify-end my-4">
+            <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4 my-4">
+              <div className="w-full sm:w-72">
+                <SearchInput />
+              </div>
               <SortOptions />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-screen-xl mx-auto my-8">
@@ -182,36 +188,52 @@ const ProductsPage = async ({
           </>
         ) : (
           <div className="max-w-screen-xl mx-auto py-16 md:py-24">
-            <div className="relative bg-warm-white p-8 md:p-12 text-center">
-              {/* Card frame */}
-              <div className="absolute inset-0 border border-rose-gold/10 pointer-events-none" />
-
-              {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-8 h-8 border-l border-t border-rose-gold/30" />
-              <div className="absolute top-0 right-0 w-8 h-8 border-r border-t border-rose-gold/30" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-l border-b border-rose-gold/30" />
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-r border-b border-rose-gold/30" />
-
-              {/* Diamond decoration */}
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <div className="w-1.5 h-1.5 bg-champagne/50 diamond-shape" />
-                <div className="w-12 h-[1px] bg-gradient-to-r from-rose-gold/40 to-transparent" />
-                <div className="w-2 h-2 bg-rose-gold/40 diamond-shape" />
-                <div className="w-12 h-[1px] bg-gradient-to-l from-rose-gold/40 to-transparent" />
-                <div className="w-1.5 h-1.5 bg-champagne/50 diamond-shape" />
+            <div className="max-w-screen-xl mx-auto flex justify-start mb-8">
+              <div className="w-full sm:w-72">
+                <SearchInput />
               </div>
-
-              <h3 className="text-xl md:text-2xl font-primary font-semibold text-charcoal mb-4">
-                Tuotteita ei löytynyt
-              </h3>
-              <p className="text-sm md:text-base font-secondary text-charcoal/60 max-w-md mx-auto">
-                Tällä kategorialla ei ole vielä tuotteita. Tutustu muihin
-                kategorioihin.
-              </p>
-
-              {/* Bottom line */}
-              <div className="mt-6 h-[1px] bg-gradient-to-r from-transparent via-rose-gold/20 to-transparent max-w-xs mx-auto" />
             </div>
+            {searchQuery ? (
+              <div className="text-center">
+                <h3 className="text-xl md:text-2xl font-primary font-semibold text-charcoal mb-4">
+                  Haulla &quot;{searchQuery}&quot; ei löytynyt tuotteita
+                </h3>
+                <p className="text-sm md:text-base font-secondary text-charcoal/60 max-w-md mx-auto">
+                  Kokeile eri hakusanoja tai selaa kategorioita.
+                </p>
+              </div>
+            ) : (
+              <div className="relative bg-warm-white p-8 md:p-12 text-center">
+                {/* Card frame */}
+                <div className="absolute inset-0 border border-rose-gold/10 pointer-events-none" />
+
+                {/* Corner accents */}
+                <div className="absolute top-0 left-0 w-8 h-8 border-l border-t border-rose-gold/30" />
+                <div className="absolute top-0 right-0 w-8 h-8 border-r border-t border-rose-gold/30" />
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-l border-b border-rose-gold/30" />
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-r border-b border-rose-gold/30" />
+
+                {/* Diamond decoration */}
+                <div className="flex items-center justify-center gap-3 mb-6">
+                  <div className="w-1.5 h-1.5 bg-champagne/50 diamond-shape" />
+                  <div className="w-12 h-[1px] bg-gradient-to-r from-rose-gold/40 to-transparent" />
+                  <div className="w-2 h-2 bg-rose-gold/40 diamond-shape" />
+                  <div className="w-12 h-[1px] bg-gradient-to-l from-rose-gold/40 to-transparent" />
+                  <div className="w-1.5 h-1.5 bg-champagne/50 diamond-shape" />
+                </div>
+
+                <h3 className="text-xl md:text-2xl font-primary font-semibold text-charcoal mb-4">
+                  Tuotteita ei löytynyt
+                </h3>
+                <p className="text-sm md:text-base font-secondary text-charcoal/60 max-w-md mx-auto">
+                  Tällä kategorialla ei ole vielä tuotteita. Tutustu muihin
+                  kategorioihin.
+                </p>
+
+                {/* Bottom line */}
+                <div className="mt-6 h-[1px] bg-gradient-to-r from-transparent via-rose-gold/20 to-transparent max-w-xs mx-auto" />
+              </div>
+            )}
           </div>
         )}
       </section>
