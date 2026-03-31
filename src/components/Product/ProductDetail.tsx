@@ -24,11 +24,12 @@ const ImageSliderWithZoom = dynamic(
 import type {
   ProductDetail as ProductDetailType,
   ProductVariation,
+  ImageAspectRatio,
 } from "@putiikkipalvelu/storefront-sdk";
 import WishlistButton from "./WishlistButton";
 import { sanitizeHtml } from "@/lib/sanitize";
 
-const ProductDetail = ({ product }: { product: ProductDetailType }) => {
+const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: ProductDetailType; imageAspectRatio?: ImageAspectRatio }) => {
   const hasVariations = product.variations?.length > 0;
   const [selectedVariation, setSelectedVariation] = useState<
     ProductVariation | undefined
@@ -78,6 +79,7 @@ const ProductDetail = ({ product }: { product: ProductDetailType }) => {
                   : product.images
               }
               productName={product.name}
+              imageAspectRatio={imageAspectRatio}
             />
           </div>
           <div className="md:hidden">
@@ -88,6 +90,7 @@ const ProductDetail = ({ product }: { product: ProductDetailType }) => {
                   : product.images
               }
               productName={product.name}
+              imageAspectRatio={imageAspectRatio}
             />
           </div>
         </div>

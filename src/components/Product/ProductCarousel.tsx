@@ -7,13 +7,14 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { ProductCard } from "../ProductCard";
-import type { Product } from "@putiikkipalvelu/storefront-sdk";
+import type { Product, ImageAspectRatio } from "@putiikkipalvelu/storefront-sdk";
 
 interface ProductCarouselProps {
   products: Product[];
+  imageAspectRatio?: ImageAspectRatio;
 }
 
-export function ProductCarousel({ products }: ProductCarouselProps) {
+export function ProductCarousel({ products, imageAspectRatio }: ProductCarouselProps) {
   return (
     <Carousel
       className="sm:hidden p-4"
@@ -26,7 +27,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
       <CarouselContent className="-ml-5">
         {products.map((item) => (
           <CarouselItem key={item.id} className="pl-5 basis-[85%]">
-            <ProductCard item={item} />
+            <ProductCard item={item} imageAspectRatio={imageAspectRatio} />
           </CarouselItem>
         ))}
       </CarouselContent>

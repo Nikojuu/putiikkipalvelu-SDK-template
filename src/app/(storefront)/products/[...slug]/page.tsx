@@ -37,9 +37,7 @@ export async function generateMetadata({
     if (categorySlug && categorySlug !== "all-products") {
       try {
         const decodedSlug = decodeURIComponent(categorySlug);
-        const { category } = await storefront.categories.getBySlug(decodedSlug, {
-          next: { revalidate: 86400 },
-        });
+        const { category } = await storefront.categories.getBySlug(decodedSlug);
         categoryName = category.name || "Tuotteet";
         metaTitle = category.metaTitle;
         metaDescription = category.metaDescription;
@@ -174,7 +172,7 @@ const ProductsPage = async ({
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-screen-xl mx-auto my-8">
               {products.map((item) => (
-                <ProductCard item={item} key={item.id} />
+                <ProductCard item={item} key={item.id} imageAspectRatio={config.store.imageAspectRatio} />
               ))}
             </div>
             {totalPages > 1 && (

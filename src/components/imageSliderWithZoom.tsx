@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { cn, getImageUrl } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Loader2, Search } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import type { ImageAspectRatio } from "@putiikkipalvelu/storefront-sdk";
 
 interface ImageSliderWithZoomProps {
   images: string[];
   productName?: string;
+  imageAspectRatio?: ImageAspectRatio;
 }
 
-export function ImageSliderWithZoom({ images, productName }: ImageSliderWithZoomProps) {
+export function ImageSliderWithZoom({ images, productName, imageAspectRatio = "SQUARE" }: ImageSliderWithZoomProps) {
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
@@ -96,7 +98,7 @@ export function ImageSliderWithZoom({ images, productName }: ImageSliderWithZoom
       {/* Main Image Container - no overflow hidden so zoom can escape */}
       <div
         ref={imageContainerRef}
-        className="relative group bg-cream/30 aspect-square w-full cursor-none"
+        className={`relative group bg-cream/30 ${imageAspectRatio === "PORTRAIT" ? "aspect-[3/4]" : "aspect-square"} w-full cursor-none`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onMouseMove={handleMouseMove}
@@ -169,7 +171,7 @@ export function ImageSliderWithZoom({ images, productName }: ImageSliderWithZoom
 
         {/* Zoom panel - outside the overflow-hidden wrapper */}
         {zoomActive && !isLoading && (
-          <div className="absolute top-0 left-full ml-4 aspect-square w-[400px] bg-warm-white border border-rose-gold/20 overflow-hidden shadow-xl z-50">
+          <div className={`absolute top-0 left-full ml-4 ${imageAspectRatio === "PORTRAIT" ? "aspect-[3/4]" : "aspect-square"} w-[400px] bg-warm-white border border-rose-gold/20 overflow-hidden shadow-xl z-50`}>
             {/* Corner accents */}
             <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-rose-gold/40 z-10" />
             <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-rose-gold/40 z-10" />
@@ -201,7 +203,7 @@ export function ImageSliderWithZoom({ images, productName }: ImageSliderWithZoom
           {images.map((image, index) => (
             <div
               className={cn(
-                "relative aspect-square overflow-hidden cursor-pointer transition-all duration-300",
+                `relative ${imageAspectRatio === "PORTRAIT" ? "aspect-[3/4]" : "aspect-square"} overflow-hidden cursor-pointer transition-all duration-300`,
                 index === safeIndex
                   ? "ring-2 ring-rose-gold ring-offset-2 ring-offset-warm-white"
                   : "ring-1 ring-charcoal/10 hover:ring-rose-gold/40"

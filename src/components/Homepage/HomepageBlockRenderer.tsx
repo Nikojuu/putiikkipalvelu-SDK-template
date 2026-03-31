@@ -10,6 +10,7 @@ import CtaSection from "@/components/Homepage/CtaSection";
 import AboutBlock from "@/components/Aboutpage/AboutBlock";
 import CarouselContentBlock from "@/components/CarouselContentBlock";
 import { storefront } from "@/lib/storefront";
+import { getStoreConfig } from "@/lib/storeConfig";
 import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
 
 const PhotoGallery = dynamic(
@@ -31,7 +32,10 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
 
     case "latest_products": {
       const count = block.data.count ?? 6;
-      const latestProducts = await storefront.products.latest(count);
+      const [latestProducts, config] = await Promise.all([
+        storefront.products.latest(count),
+        getStoreConfig(),
+      ]);
 
       return (
         <section className="relative py-8 bg-gradient-to-b from-warm-white via-cream/20 to-warm-white">
@@ -44,7 +48,7 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
           <div className="hidden sm:block container mx-auto px-4 max-w-7xl">
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
               {latestProducts.map((item) => (
-                <ProductCard item={item} key={item.id} />
+                <ProductCard item={item} key={item.id} imageAspectRatio={config.store.imageAspectRatio} />
               ))}
             </div>
 
@@ -72,7 +76,7 @@ export async function HomepageBlockRenderer({ block }: { block: PageBlock }) {
           </div>
 
           {/* Mobile carousel */}
-          <ProductCarousel products={latestProducts} />
+          <ProductCarousel products={latestProducts} imageAspectRatio={config.store.imageAspectRatio} />
         </section>
       );
     }

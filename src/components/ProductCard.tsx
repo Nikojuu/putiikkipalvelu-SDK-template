@@ -7,13 +7,14 @@ import { Share2 } from "lucide-react";
 
 import { getPriceInfo, getImageUrl } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
-import type { Product } from "@putiikkipalvelu/storefront-sdk";
+import type { Product, ImageAspectRatio } from "@putiikkipalvelu/storefront-sdk";
 
 interface ProductCardProps {
   item: Product;
+  imageAspectRatio?: ImageAspectRatio;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ item }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio = "SQUARE" }) => {
   const priceInfo = getPriceInfo(item);
   const hasVariations = (item.variations ?? []).length > 0;
 
@@ -44,7 +45,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item }) => {
           <div className="absolute bottom-0 right-0 w-6 h-6 border-r border-b border-rose-gold/30 z-10 transition-all duration-500 group-hover:w-10 group-hover:h-10 group-hover:border-rose-gold/50" />
 
           {/* Image section */}
-          <div className="relative aspect-square overflow-hidden bg-cream/30">
+          <div className={`relative ${imageAspectRatio === "PORTRAIT" ? "aspect-[3/4]" : "aspect-square"} overflow-hidden bg-cream/30`}>
             <img
               src={getImageUrl(item.images[0], "small")}
               alt={item.name}

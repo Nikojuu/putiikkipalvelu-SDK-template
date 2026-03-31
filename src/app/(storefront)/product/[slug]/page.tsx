@@ -112,7 +112,7 @@ const ProductIdRoute = async ({
       />
       <BreadcrumbSchema items={breadcrumbItems} />
       <section className="mt-24 md:mt-48 container mx-auto px-4">
-        <ProductDetail product={product} />
+        <ProductDetail product={product} imageAspectRatio={config.store.imageAspectRatio} />
       </section>
     </>
   );

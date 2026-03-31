@@ -5,12 +5,15 @@ import { cn, getImageUrl } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
+import type { ImageAspectRatio } from "@putiikkipalvelu/storefront-sdk";
+
 interface iAppProps {
   images: string[];
   productName?: string;
+  imageAspectRatio?: ImageAspectRatio;
 }
 
-export function ImageSlider({ images, productName }: iAppProps) {
+export function ImageSlider({ images, productName, imageAspectRatio = "SQUARE" }: iAppProps) {
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
@@ -53,7 +56,7 @@ export function ImageSlider({ images, productName }: iAppProps) {
   return (
     <div className="grid gap-4 items-start">
       {/* Main Image */}
-      <div className="relative overflow-hidden aspect-square w-full group bg-cream/30">
+      <div className={`relative overflow-hidden ${imageAspectRatio === "PORTRAIT" ? "aspect-[3/4]" : "aspect-square"} w-full group bg-cream/30`}>
         {/* Corner accents */}
         <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 border-rose-gold/30 z-10 transition-all duration-500 group-hover:w-12 group-hover:h-12 group-hover:border-rose-gold/50" />
         <div className="absolute top-0 right-0 w-8 h-8 border-r-2 border-t-2 border-rose-gold/30 z-10 transition-all duration-500 group-hover:w-12 group-hover:h-12 group-hover:border-rose-gold/50" />
@@ -105,7 +108,7 @@ export function ImageSlider({ images, productName }: iAppProps) {
         {images.map((image, index) => (
           <div
             className={cn(
-              "relative aspect-square overflow-hidden cursor-pointer transition-all duration-300",
+              `relative ${imageAspectRatio === "PORTRAIT" ? "aspect-[3/4]" : "aspect-square"} overflow-hidden cursor-pointer transition-all duration-300`,
               index === mainImageIndex
                 ? "ring-2 ring-rose-gold ring-offset-2 ring-offset-warm-white"
                 : "ring-1 ring-charcoal/10 hover:ring-rose-gold/40"
