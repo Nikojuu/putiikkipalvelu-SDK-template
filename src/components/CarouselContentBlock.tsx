@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { imgproxyLoader } from "@/lib/imgproxy-loader";
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -73,10 +74,11 @@ export default function CarouselContentBlock({
                 <CarouselItem key={item.id}>
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <Image
+                      loader={imgproxyLoader}
                       fill
                       src={item.src}
                       alt={item.alt ?? ""}
-                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
                       className="object-cover"
                     />
                   </div>

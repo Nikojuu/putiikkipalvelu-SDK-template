@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { imgproxyLoader } from "@/lib/imgproxy-loader";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
@@ -60,6 +61,7 @@ export function Hero({
         className="absolute inset-0"
       >
         <Image
+          {...(imageUrl ? { loader: imgproxyLoader } : {})}
           alt="Hero"
           src={imageUrl || "/logo.svg"}
           fill

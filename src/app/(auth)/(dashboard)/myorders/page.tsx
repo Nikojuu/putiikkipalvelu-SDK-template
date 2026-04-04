@@ -1,7 +1,7 @@
 import { getUser } from "@/lib/actions/authActions";
 import { redirect } from "next/navigation";
 
-import { getImageUrl } from "@/lib/utils";
+import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import {
   Package,
   Calendar,
@@ -198,7 +198,7 @@ const OrderCard = ({ order }: { order: Order }) => {
                     <div className="w-12 h-12 relative flex-shrink-0">
                       {item.product.images && item.product.images.length > 0 ? (
                         <img
-                          src={getImageUrl(item.product.images[0], "thumbnail")}
+                          src={imgproxyUrl(item.product.images[0], 150)}
                           alt={item.product.name}
                           className="w-full h-full object-cover rounded-md"
                         />

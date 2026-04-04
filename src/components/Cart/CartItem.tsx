@@ -2,7 +2,8 @@
 
 import { useCart } from "@/hooks/use-cart";
 import { X, Plus, Minus } from "lucide-react";
-import { getImageUrl, isSaleActive } from "@/lib/utils";
+import { isSaleActive } from "@/lib/utils";
+import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import type {
   ProductDetail,
   ProductVariation,
@@ -73,7 +74,7 @@ export default function CartItem({
         {/* Product image */}
         <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden bg-warm-white">
           <img
-            src={getImageUrl(variation?.images?.[0] ?? product.images[0], "thumbnail")}
+            src={imgproxyUrl(variation?.images?.[0] ?? product.images[0], 200)}
             alt={product.name}
             className="object-cover w-full h-full"
             loading="lazy"

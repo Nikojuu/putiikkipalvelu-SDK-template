@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
-import { getImageUrl } from "@/lib/utils";
+import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import { storefront } from "@/lib/storefront";
 import type { Order } from "@putiikkipalvelu/storefront-sdk";
 
@@ -120,7 +120,7 @@ export default async function PaymentSuccessPage({
                     {item.images.length > 0 && (
                       <div className="w-16 h-16 flex-shrink-0">
                         <img
-                          src={getImageUrl(item.images[0], "thumbnail")}
+                          src={imgproxyUrl(item.images[0], 150)}
                           alt={item.name}
                           className="rounded-md object-cover w-full h-full border border-rose-gold/10"
                           loading="lazy"

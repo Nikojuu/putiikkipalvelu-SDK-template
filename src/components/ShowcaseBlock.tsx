@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { imgproxyLoader } from "@/lib/imgproxy-loader";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
@@ -75,9 +76,10 @@ export default function ShowcaseBlock({ title, description, items }: ShowcaseBlo
               <div className="relative aspect-[3/4] overflow-hidden">
                 {item.imageUrl ? (
                   <Image
+                    loader={imgproxyLoader}
                     className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                     fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    sizes="(max-width: 1024px) 100vw, 33vw"
                     src={item.imageUrl}
                     alt={item.title}
                   />

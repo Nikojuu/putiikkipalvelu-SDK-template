@@ -15,6 +15,7 @@ const PhotoGallery = dynamic(
 );
 import ShowcaseBlock from "@/components/ShowcaseBlock";
 import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
+import ImageGridBlock from "@/components/ImageGridBlock";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -195,46 +196,14 @@ function BlockRenderer({ block }: { block: PageBlock }) {
         />
       );
 
-    case "image_grid": {
-      const gridCols =
-        block.data.columns === 2
-          ? "sm:grid-cols-2"
-          : block.data.columns === 3
-            ? "sm:grid-cols-3"
-            : "sm:grid-cols-4";
+    case "image_grid":
       return (
-        <div>
-          {block.data.title && (
-            <h2 className="text-2xl font-semibold mb-4">
-              {block.data.title}
-            </h2>
-          )}
-          <div className={`grid grid-cols-1 ${gridCols} gap-6`}>
-            {[...block.data.items]
-              .sort((a, b) => a.order - b.order)
-              .map((item) => (
-                <div key={item.id}>
-                  {item.imageUrl && (
-                    <img
-                      src={item.imageUrl}
-                      alt=""
-                      className="rounded-lg w-full aspect-4/3 object-cover mb-3"
-                    />
-                  )}
-                  {item.content && (
-                    <div
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{
-                        __html: sanitizeHtml(item.content),
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
-          </div>
-        </div>
+        <ImageGridBlock
+          title={block.data.title}
+          columns={block.data.columns}
+          items={block.data.items}
+        />
       );
-    }
 
     case "text_grid": {
       const textGridCols =

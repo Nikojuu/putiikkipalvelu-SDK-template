@@ -5,7 +5,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Share2 } from "lucide-react";
 
-import { getPriceInfo, getImageUrl } from "@/lib/utils";
+import { getPriceInfo } from "@/lib/utils";
+import Image from "next/image";
+import { imgproxyLoader } from "@/lib/imgproxy-loader";
 import { Skeleton } from "./ui/skeleton";
 import type { Product, ImageAspectRatio } from "@putiikkipalvelu/storefront-sdk";
 
@@ -46,11 +48,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio
 
           {/* Image section */}
           <div className={`relative ${imageAspectRatio === "PORTRAIT" ? "aspect-[3/4]" : "aspect-square"} overflow-hidden bg-cream/30`}>
-            <img
-              src={getImageUrl(item.images[0], "small")}
+            <Image
+              loader={imgproxyLoader}
+              src={item.images[0] || ""}
+              fill
+              sizes="(max-width: 640px) 85vw, (max-width: 1024px) 50vw, 33vw"
               alt={item.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              loading="lazy"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
 
             {/* Elegant overlay on hover */}

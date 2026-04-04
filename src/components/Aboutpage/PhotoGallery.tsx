@@ -11,6 +11,7 @@ import "yet-another-react-lightbox/plugins/thumbnails.css";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 
 import Image from "next/image";
+import { imgproxyLoader } from "@/lib/imgproxy-loader";
 import type { Photo, RenderPhotoProps } from "react-photo-album";
 import type { GalleryItem } from "@putiikkipalvelu/storefront-sdk";
 
@@ -80,6 +81,7 @@ function NextJsImage({
   return (
     <div style={{ ...wrapperStyle, position: "relative", overflow: "hidden" }}>
       <Image
+        loader={imgproxyLoader}
         fill
         className="rounded-sm object-contain transition-transform duration-300 hover:scale-105"
         src={photo}

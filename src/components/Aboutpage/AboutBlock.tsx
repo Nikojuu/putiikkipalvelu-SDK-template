@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { imgproxyLoader } from "@/lib/imgproxy-loader";
 import { motion } from "framer-motion";
 import { useRef } from "react";
 import { useInView } from "framer-motion";
@@ -53,10 +54,11 @@ const AboutBlock = ({ blockInfo }: { blockInfo: AboutBlockType }) => {
         {/* Image wrapper */}
         <div className="relative aspect-[4/5] overflow-hidden bg-cream">
           <Image
+            loader={imgproxyLoader}
             fill
             alt={blockInfo.title}
             src={blockInfo.imgSrc}
-            sizes="(min-width: 1024px) 50vw, 100vw"
+            sizes="(max-width: 1024px) 100vw, 50vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
             priority
           />

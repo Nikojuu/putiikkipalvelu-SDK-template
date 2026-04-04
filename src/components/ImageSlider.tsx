@@ -1,7 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { cn, getImageUrl } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -26,7 +27,7 @@ export function ImageSlider({ images, productName, imageAspectRatio = "SQUARE" }
   useEffect(() => {
     images.forEach((image, index) => {
       const img = new window.Image();
-      img.src = getImageUrl(image, "medium");
+      img.src = imgproxyUrl(image, 1200);
       img.onload = () => {
         setLoadedImages((prev) => new Set(prev).add(index));
       };
@@ -63,10 +64,9 @@ export function ImageSlider({ images, productName, imageAspectRatio = "SQUARE" }
         <div className="absolute bottom-0 left-0 w-8 h-8 border-l-2 border-b-2 border-rose-gold/30 z-10 transition-all duration-500 group-hover:w-12 group-hover:h-12 group-hover:border-rose-gold/50" />
         <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 border-rose-gold/30 z-10 transition-all duration-500 group-hover:w-12 group-hover:h-12 group-hover:border-rose-gold/50" />
 
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={getImageUrl(images[mainImageIndex], "small")}
-          srcSet={`${getImageUrl(images[mainImageIndex], "small")} 400w, ${getImageUrl(images[mainImageIndex], "medium")} 800w`}
-          sizes="400px"
+          src={imgproxyUrl(images[mainImageIndex], 1200)}
           alt={productName || "Tuotekuva"}
           className={cn(
             "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
@@ -116,8 +116,9 @@ export function ImageSlider({ images, productName, imageAspectRatio = "SQUARE" }
             key={index}
             onClick={() => handleImageClick(index)}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={getImageUrl(image, "thumbnail")}
+              src={imgproxyUrl(image, 400)}
               alt={`${productName || "Tuote"} - pikkukuva`}
               className="absolute inset-0 w-full h-full object-cover"
               loading="lazy"

@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Heart, ShoppingCart, Euro } from "lucide-react";
-import { isSaleActive, getImageUrl } from "@/lib/utils";
+import { isSaleActive } from "@/lib/utils";
+import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import DeleteWishlistButton from "@/components/Auth/DeleteWishListButton";
 
 // Define interfaces based on the database schema
@@ -211,7 +212,7 @@ const WishlistPage = async () => {
                       <div className="flex items-start space-x-4 flex-1">
                         <div className="relative w-24 h-24 overflow-hidden bg-cream/30 border border-rose-gold/10 flex-shrink-0">
                           <img
-                            src={getImageUrl(displayImage, "thumbnail")}
+                            src={imgproxyUrl(displayImage, 200)}
                             alt={item.product.name}
                             className="w-full h-full object-cover"
                           />

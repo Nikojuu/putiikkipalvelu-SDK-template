@@ -1,7 +1,8 @@
 "use client";
 
 import type { Campaign, CalculatedCartItem } from "@putiikkipalvelu/storefront-sdk";
-import { getImageUrl, isSaleActive } from "@/lib/utils";
+import { isSaleActive } from "@/lib/utils";
+import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import { Minus, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
@@ -73,9 +74,9 @@ export const CampaignAddedCartItems = ({
                   className="relative w-24 h-24 md:w-32 md:h-32 flex-shrink-0 overflow-hidden bg-warm-white group"
                 >
                   <img
-                    src={getImageUrl(
+                    src={imgproxyUrl(
                       variation?.images[0] || product.images[0],
-                      "thumbnail"
+                      300
                     )}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -85,9 +86,9 @@ export const CampaignAddedCartItems = ({
               ) : (
                 <div className="relative w-24 h-24 md:w-32 md:h-32 flex-shrink-0 overflow-hidden bg-warm-white">
                   <img
-                    src={getImageUrl(
+                    src={imgproxyUrl(
                       variation?.images[0] || product.images[0],
-                      "thumbnail"
+                      300
                     )}
                     alt={product.name}
                     className="w-full h-full object-cover"

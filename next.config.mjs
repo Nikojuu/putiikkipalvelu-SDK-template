@@ -9,6 +9,10 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "cdn.putiikkipalvelu.fi",
+      },
+      {
+        protocol: "https",
         hostname: "images.putiikkipalvelu.fi",
       },
       {
