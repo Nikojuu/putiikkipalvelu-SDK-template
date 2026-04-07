@@ -251,6 +251,52 @@ function BlockRenderer({ block }: { block: PageBlock }) {
       );
     }
 
+    case "table":
+      return (
+        <div>
+          {block.data.title && (
+            <h2 className="text-2xl font-semibold mb-2">
+              {block.data.title}
+            </h2>
+          )}
+          {block.data.description && (
+            <p className="text-muted-foreground mb-4">
+              {block.data.description}
+            </p>
+          )}
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  {block.data.headers.map((header, i) => (
+                    <th
+                      key={i}
+                      className="px-4 py-3 text-left font-semibold"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {block.data.rows.map((row, ri) => (
+                  <tr
+                    key={ri}
+                    className="border-b last:border-b-0 transition-colors hover:bg-muted/30"
+                  >
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="px-4 py-3">
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+
     default:
       return null;
   }

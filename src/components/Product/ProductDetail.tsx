@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectTrigger,
@@ -28,6 +28,7 @@ import type {
 } from "@putiikkipalvelu/storefront-sdk";
 import WishlistButton from "./WishlistButton";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { trackViewItem } from "@/lib/gtm";
 
 const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: ProductDetailType; imageAspectRatio?: ImageAspectRatio }) => {
   const hasVariations = product.variations?.length > 0;
@@ -39,6 +40,10 @@ const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: Prod
     const variation = product.variations.find((v) => v.id === variationId);
     setSelectedVariation(variation);
   };
+
+  useEffect(() => {
+    trackViewItem(product, selectedVariation);
+  }, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isProductInStock = product.quantity === null || product.quantity > 0;
   const isVariationInStock = selectedVariation

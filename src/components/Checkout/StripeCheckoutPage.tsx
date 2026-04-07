@@ -24,6 +24,7 @@ import { getShippingOptions } from "@/lib/actions/shipmentActions";
 
 import { useRouter } from "next/navigation";
 import { apiCreateStripeCheckoutSession } from "@/lib/actions/stripeActions";
+import { trackBeginCheckout } from "@/lib/gtm";
 
 const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const { toast } = useToast();
@@ -208,6 +209,8 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     // Prevent double submission
     if (isLoading) return;
     setIsLoading(true);
+
+    trackBeginCheckout(cartItems, cartTotalAfterDiscount, discount?.code);
 
     // Revalidate customer data with Zod schema
     const validationResult = customerDataSchema.safeParse(customerData);

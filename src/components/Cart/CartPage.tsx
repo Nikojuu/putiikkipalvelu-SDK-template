@@ -14,6 +14,7 @@ import {
   calculateCartWithCampaigns,
   type Campaign,
 } from "@putiikkipalvelu/storefront-sdk";
+import { trackViewCart } from "@/lib/gtm";
 
 export type ShipmentMethods = {
   id: string;
@@ -57,6 +58,13 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const buyXPayYCampaign = campaigns.find(
     (campaign) => campaign.type === "BUY_X_PAY_Y" && campaign.isActive
   );
+
+  // Track view_cart on mount
+  useEffect(() => {
+    if (cart.items.length > 0) {
+      trackViewCart(cart.items, cartTotal);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear validation error when cart items change
   useEffect(() => {

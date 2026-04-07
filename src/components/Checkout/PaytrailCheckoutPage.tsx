@@ -24,6 +24,7 @@ import { getShippingOptions } from "@/lib/actions/shipmentActions";
 import { CheckoutButton } from "../Cart/CheckoutButton";
 import { apiCreatePaytrailCheckoutSession } from "@/lib/actions/paytrailActions";
 import PaymentSelection from "./PaytrailPaymentSelection";
+import { trackBeginCheckout } from "@/lib/gtm";
 
 const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const { toast } = useToast();
@@ -223,6 +224,8 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
     const validatedCustomerData = validationResult.data;
     setIsLoading(true);
+
+    trackBeginCheckout(cartItems, cartTotalAfterDiscount, discount?.code);
 
     // Convert to the format expected by the checkout API
     const chosenShipmentMethod = selectedShipping

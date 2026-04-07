@@ -8,6 +8,7 @@ import type {
   ProductDetail,
   ProductVariation,
 } from "@putiikkipalvelu/storefront-sdk";
+import { trackRemoveFromCart } from "@/lib/gtm";
 
 type CartItemProps = {
   product: ProductDetail;
@@ -179,7 +180,10 @@ export default function CartItem({
 
           {/* Remove button */}
           <button
-            onClick={() => removeItem(product.id, variation?.id)}
+            onClick={() => {
+              trackRemoveFromCart(product, variation, displayQuantity);
+              removeItem(product.id, variation?.id);
+            }}
             className="flex items-center gap-1 text-xs font-secondary text-charcoal/50 transition-colors duration-300 hover:text-deep-burgundy"
           >
             <X className="w-3 h-3" />

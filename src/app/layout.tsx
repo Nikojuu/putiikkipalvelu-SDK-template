@@ -11,6 +11,7 @@ import OrganizationSchema from "@/components/StructuredData/OrganizationSchema";
 import LocalBusinessSchema from "@/components/StructuredData/LocalBusinessSchema";
 import { SEO_ENABLED } from "@/app/utils/constants";
 import Script from "next/script";
+import { GoogleTagManager } from "@next/third-parties/google";
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -126,7 +127,9 @@ export default async function RootLayout({
           />
         )}
       </head>
-
+      {analytics?.gtmContainerId && (
+        <GoogleTagManager gtmId={analytics.gtmContainerId} />
+      )}
       <body className="bg-warm-white">
         <StickyNavbar campaigns={campaigns} logoUrl={logoUrl}>
           <Navbar campaigns={campaigns} logoUrl={logoUrl} navPages={navPages} />

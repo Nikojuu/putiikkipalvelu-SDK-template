@@ -5,7 +5,9 @@
       "WebSearch",
       "Bash(ls:*)",
       "Bash(find:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:caisy.io)",
+      "WebFetch(domain:www.nexiostudio.dev)"
     ],
     "deny": [],
     "ask": [],

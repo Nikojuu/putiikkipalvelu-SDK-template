@@ -7,6 +7,7 @@ import type {
   ProductVariation,
 } from "@putiikkipalvelu/storefront-sdk";
 import { toast } from "@/hooks/use-toast";
+import { trackAddToCart } from "@/lib/gtm";
 
 const AddToCartButton = ({
   product,
@@ -44,6 +45,7 @@ const AddToCartButton = ({
 
     if (result.success) {
       setIsSuccess(true);
+      trackAddToCart(product, selectedVariation);
     } else {
       if (result.code === "CART_LIMIT_EXCEEDED") {
         toast({

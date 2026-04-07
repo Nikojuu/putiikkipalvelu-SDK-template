@@ -1,21 +1,14 @@
 import { CheckCircle, Truck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import { storefront } from "@/lib/storefront";
 import type { Order } from "@putiikkipalvelu/storefront-sdk";
+import { PurchaseTracker } from "@/components/Checkout/PurchaseTracker";
 
 export const metadata: Metadata = {
   title: "Pupun Korvat | Kiitos tilauksestasi!",
@@ -70,8 +63,27 @@ export default async function PaymentSuccessPage({
     return `${(price / 100).toFixed(2)} €`;
   };
 
+  const productItems = order.OrderLineItems.filter(
+    (item) => item.itemType !== "SHIPPING",
+  );
+  const shippingItem = order.OrderLineItems.find(
+    (item) => item.itemType === "SHIPPING",
+  );
+
   return (
     <section className="pt-8 md:pt-16 pb-16 bg-warm-white min-h-screen">
+      <PurchaseTracker
+        orderNumber={String(order.orderNumber)}
+        totalAmount={order.totalAmount}
+        shippingCost={shippingItem?.totalAmount}
+        discountCode={order.discountCodeValue ?? undefined}
+        items={productItems.map((item) => ({
+          id: item.productCode,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        }))}
+      />
       <div className="container mx-auto px-4 max-w-screen-xl">
         {/* Success Header */}
         <div className="text-center mb-12 md:mb-16">
@@ -91,7 +103,9 @@ export default async function PaymentSuccessPage({
           <div className="font-secondary text-charcoal/70 space-y-2">
             <p className="text-base md:text-lg">
               Tilausnumero:{" "}
-              <span className="font-semibold text-charcoal">#{order.orderNumber}</span>
+              <span className="font-semibold text-charcoal">
+                #{order.orderNumber}
+              </span>
             </p>
           </div>
         </div>
@@ -110,12 +124,17 @@ export default async function PaymentSuccessPage({
                 <CheckCircle className="h-5 w-5 text-sage-green" />
                 Tilatut tuotteet
               </h2>
-              <p className="font-secondary text-sm text-charcoal/60">Yhteenveto ostoksestasi</p>
+              <p className="font-secondary text-sm text-charcoal/60">
+                Yhteenveto ostoksestasi
+              </p>
             </div>
 
             <div className="space-y-4">
               {order.OrderLineItems.map((item, index) => (
-                <div key={item.id} className="border-b border-rose-gold/10 pb-4 last:border-b-0">
+                <div
+                  key={item.id}
+                  className="border-b border-rose-gold/10 pb-4 last:border-b-0"
+                >
                   <div className="flex gap-4">
                     {item.images.length > 0 && (
                       <div className="w-16 h-16 flex-shrink-0">
@@ -128,20 +147,26 @@ export default async function PaymentSuccessPage({
                       </div>
                     )}
                     <div className="flex-1">
-                      <h3 className="font-primary font-semibold text-charcoal mb-1">{item.name}</h3>
+                      <h3 className="font-primary font-semibold text-charcoal mb-1">
+                        {item.name}
+                      </h3>
                       <div className="font-secondary text-sm text-charcoal/60 space-y-0.5">
                         <p>Määrä: {item.quantity} kpl</p>
                         <p>Yksikköhinta: {formatPrice(item.price)}</p>
-                        <p>ALV: {Number(item.vatRate).toFixed(1).replace('.', ',')}%</p>
+                        <p>
+                          ALV:{" "}
+                          {Number(item.vatRate).toFixed(1).replace(".", ",")}%
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-secondary font-semibold text-charcoal">{formatPrice(item.totalAmount)}</p>
+                      <p className="font-secondary font-semibold text-charcoal">
+                        {formatPrice(item.totalAmount)}
+                      </p>
                     </div>
                   </div>
                 </div>
               ))}
-
             </div>
           </div>
 
@@ -195,7 +220,12 @@ export default async function PaymentSuccessPage({
                   {order.orderShipmentMethod.vatRate && (
                     <div className="flex justify-between items-center font-secondary">
                       <span className="text-charcoal/60">ALV:</span>
-                      <span className="text-charcoal">{Number(order.orderShipmentMethod.vatRate).toFixed(1).replace('.', ',')}%</span>
+                      <span className="text-charcoal">
+                        {Number(order.orderShipmentMethod.vatRate)
+                          .toFixed(1)
+                          .replace(".", ",")}
+                        %
+                      </span>
                     </div>
                   )}
 
@@ -216,7 +246,9 @@ export default async function PaymentSuccessPage({
                   {order.orderShipmentMethod.trackingUrls &&
                     order.orderShipmentMethod.trackingUrls.length > 0 && (
                       <div className="space-y-2">
-                        <p className="font-secondary text-sm text-charcoal/60">Seuranta:</p>
+                        <p className="font-secondary text-sm text-charcoal/60">
+                          Seuranta:
+                        </p>
                         <div className="flex flex-col gap-2">
                           {order.orderShipmentMethod.trackingUrls.map(
                             (url, index) => (
@@ -229,7 +261,7 @@ export default async function PaymentSuccessPage({
                               >
                                 Seuraa lähetystä #{index + 1}
                               </a>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -286,19 +318,24 @@ export default async function PaymentSuccessPage({
                   <span>Tuotteet:</span>
                   <span>
                     {formatPrice(
-                      order.OrderLineItems.reduce((sum, item) => sum + item.totalAmount, 0)
+                      order.OrderLineItems.reduce(
+                        (sum, item) => sum + item.totalAmount,
+                        0,
+                      ),
                     )}
                   </span>
                 </div>
 
-                {order.discountCodeValue && order.discountAmount && order.discountAmount > 0 && (
-                  <div className="flex justify-between items-center text-charcoal/70">
-                    <span>Alennuskoodi: {order.discountCodeValue}</span>
-                    <span className="text-green-600 font-semibold">
-                      -{formatPrice(order.discountAmount)}
-                    </span>
-                  </div>
-                )}
+                {order.discountCodeValue &&
+                  order.discountAmount &&
+                  order.discountAmount > 0 && (
+                    <div className="flex justify-between items-center text-charcoal/70">
+                      <span>Alennuskoodi: {order.discountCodeValue}</span>
+                      <span className="text-green-600 font-semibold">
+                        -{formatPrice(order.discountAmount)}
+                      </span>
+                    </div>
+                  )}
 
                 {order.orderShipmentMethod && (
                   <div className="flex justify-between items-center text-charcoal/70">
@@ -311,7 +348,13 @@ export default async function PaymentSuccessPage({
 
                 <div className="flex justify-between items-center font-primary text-lg md:text-xl font-bold text-charcoal">
                   <span>Yhteensä:</span>
-                  <span>{formatPrice(order.totalAmount - (order.discountAmount ?? 0) + (order.orderShipmentMethod?.price || 0))}</span>
+                  <span>
+                    {formatPrice(
+                      order.totalAmount -
+                        (order.discountAmount ?? 0) +
+                        (order.orderShipmentMethod?.price || 0),
+                    )}
+                  </span>
                 </div>
               </div>
             </div>
@@ -352,7 +395,9 @@ export default async function PaymentSuccessPage({
               <div className="w-8 h-8 rounded-full bg-sage-green/20 text-sage-green flex items-center justify-center text-sm font-bold flex-shrink-0 border border-sage-green/30">
                 3
               </div>
-              <p className="pt-1">Saat seurantakoodin, kun lähetys on matkalla sinulle.</p>
+              <p className="pt-1">
+                Saat seurantakoodin, kun lähetys on matkalla sinulle.
+              </p>
             </div>
           </div>
 
