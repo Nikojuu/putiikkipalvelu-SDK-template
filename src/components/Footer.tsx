@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { InstagramLogoIcon } from "@radix-ui/react-icons";
 import { Mail, Phone } from "lucide-react";
+import type { AnalyticsConfig } from "@putiikkipalvelu/storefront-sdk";
+import { CookieSettingsLink } from "@/components/CookieSettingsLink";
 
 interface FooterProps {
   logoUrl: string;
@@ -9,9 +11,10 @@ interface FooterProps {
   email?: string | null;
   phone?: string | null;
   instagramUrl?: string | null;
+  analytics?: AnalyticsConfig | undefined;
 }
 
-export function Footer({ logoUrl, storeName, email, phone, instagramUrl }: FooterProps) {
+export function Footer({ logoUrl, storeName, email, phone, instagramUrl, analytics }: FooterProps) {
   // Extract Instagram handle from URL for display
   const instagramHandle = instagramUrl
     ? instagramUrl.split("/").filter(Boolean).pop() || storeName.toLowerCase().replace(/\s+/g, "_")
@@ -99,6 +102,7 @@ export function Footer({ logoUrl, storeName, email, phone, instagramUrl }: Foote
               >
                 Maksu- ja toimitusehdot
               </Link>
+              <CookieSettingsLink analytics={analytics} />
             </nav>
           </div>
 

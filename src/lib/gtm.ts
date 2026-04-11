@@ -2,6 +2,7 @@ import type {
   ProductDetail,
   ProductVariation,
 } from "@putiikkipalvelu/storefront-sdk";
+import { useConsentStore } from "@/hooks/use-consent";
 
 type GtmItem = {
   item_id: string;
@@ -36,6 +37,8 @@ function toGtmItem(
 
 function pushEvent(event: string, data: Record<string, unknown>) {
   if (typeof window === "undefined") return;
+  // Skip if GTM isn't configured for this store
+  if (!useConsentStore.getState().gtmEnabled) return;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ ecommerce: null }); // Clear previous ecommerce data
   window.dataLayer.push({ event, ecommerce: data });
@@ -125,10 +128,12 @@ export function trackPurchase(order: {
   });
 }
 
-// Extend Window type for dataLayer
+// Extend Window type for dataLayer and gtag
+// Uses unknown[] to support both object pushes (ecommerce) and array pushes (gtag consent)
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window {
-    dataLayer?: Record<string, unknown>[];
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
   }
 }

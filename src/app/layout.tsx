@@ -12,6 +12,9 @@ import LocalBusinessSchema from "@/components/StructuredData/LocalBusinessSchema
 import { SEO_ENABLED } from "@/app/utils/constants";
 import Script from "next/script";
 import { GoogleTagManager } from "@next/third-parties/google";
+import CookieBanner from "@/components/CookieBanner";
+import ConsentInit from "@/components/ConsentInit";
+import { needsCookieBanner } from "@/lib/consent-config";
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -118,6 +121,11 @@ export default async function RootLayout({
       <head>
         <OrganizationSchema />
         <LocalBusinessSchema />
+        {analytics?.gtmContainerId && (
+          <Script id="gtm-consent-defaults" strategy="beforeInteractive">
+            {`window.dataLayer=window.dataLayer||[];window.gtag=function gtag(){window.dataLayer.push(arguments);};var c={analytics:false,marketing:false};try{var r=localStorage.getItem('cookie-consent');if(r){var d=JSON.parse(r);if(d&&d.version===1&&d.categories){c.analytics=!!d.categories.analytics;c.marketing=!!d.categories.marketing;}}}catch(e){}window.gtag('consent','default',{ad_storage:c.marketing?'granted':'denied',ad_user_data:c.marketing?'granted':'denied',ad_personalization:c.marketing?'granted':'denied',analytics_storage:c.analytics?'granted':'denied',functionality_storage:'granted',personalization_storage:'denied',security_storage:'granted'});`}
+          </Script>
+        )}
         {analytics?.umamiWebsiteId && analytics.umamiScriptUrl && (
           <Script
             defer
@@ -135,9 +143,11 @@ export default async function RootLayout({
           <Navbar campaigns={campaigns} logoUrl={logoUrl} navPages={navPages} />
         </StickyNavbar>
         <main className="min-h-[75vh] max-w-[3500px]">{children}</main>
-        <Footer logoUrl={logoUrl} storeName={storeName} email={storeEmail} phone={storePhone} instagramUrl={instagramUrl} />
+        <Footer logoUrl={logoUrl} storeName={storeName} email={storeEmail} phone={storePhone} instagramUrl={instagramUrl} analytics={analytics} />
 
         <Toaster />
+        <ConsentInit gtmEnabled={!!analytics?.gtmContainerId} />
+        {needsCookieBanner(analytics) && <CookieBanner analytics={analytics} />}
       </body>
     </html>
   );
