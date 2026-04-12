@@ -16,5 +16,9 @@
       "D:\\Projektit\\verkkokaupat\\Hennan-Korukauppa",
       "D:\\Projektit\\verkkokaupat\\hienohelma"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "playwright"
+  ],
+  "enableAllProjectMcpServers": true
 }

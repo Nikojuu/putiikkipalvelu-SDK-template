@@ -39,12 +39,15 @@ export function ImageSliderWithZoom({ images, productName, imageAspectRatio = "S
 
   // Zoom settings
   const ZOOM_LEVEL = 2.5;
+  const MAIN_IMAGE_WIDTH = 1200;
+  const ZOOM_IMAGE_WIDTH = 2400;
+  const THUMBNAIL_WIDTH = 250;
 
-  // Preload all images on mount
+  // Preload all images on mount (main resolution)
   useEffect(() => {
     images.forEach((image, index) => {
       const img = new window.Image();
-      img.src = imgproxyUrl(image, 1200);
+      img.src = imgproxyUrl(image, MAIN_IMAGE_WIDTH);
       img.onload = () => {
         setLoadedImages((prev) => new Set(prev).add(index));
       };
@@ -73,6 +76,9 @@ export function ImageSliderWithZoom({ images, productName, imageAspectRatio = "S
 
   function handleMouseEnter() {
     setZoomActive(true);
+    // Preload the high-res zoom image on hover
+    const zoomImg = new window.Image();
+    zoomImg.src = imgproxyUrl(images[safeIndex], ZOOM_IMAGE_WIDTH);
   }
 
   function handleMouseLeave() {
@@ -114,7 +120,7 @@ export function ImageSliderWithZoom({ images, productName, imageAspectRatio = "S
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={imgproxyUrl(images[mainImageIndex], 1200)}
+            src={imgproxyUrl(images[mainImageIndex], MAIN_IMAGE_WIDTH)}
             alt={productName || "Tuotekuva"}
             className={cn(
               "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
@@ -182,7 +188,7 @@ export function ImageSliderWithZoom({ images, productName, imageAspectRatio = "S
 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={imgproxyUrl(images[safeIndex], 1200)}
+              src={imgproxyUrl(images[safeIndex], ZOOM_IMAGE_WIDTH)}
               alt={`${productName || "Tuote"} - suurennettu`}
               className="absolute pointer-events-none w-full h-full object-cover"
               style={{
@@ -216,7 +222,7 @@ export function ImageSliderWithZoom({ images, productName, imageAspectRatio = "S
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={imgproxyUrl(image, 250)}
+                src={imgproxyUrl(image, THUMBNAIL_WIDTH)}
                 alt={`${productName || "Tuote"} - pikkukuva`}
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"

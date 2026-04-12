@@ -23,11 +23,14 @@ export function ImageSlider({ images, productName, imageAspectRatio = "SQUARE" }
   // Derive loading state from loadedImages
   const isLoading = !loadedImages.has(mainImageIndex);
 
+  const MAIN_IMAGE_WIDTH = 800;
+  const THUMBNAIL_WIDTH = 400;
+
   // Preload all images on mount
   useEffect(() => {
     images.forEach((image, index) => {
       const img = new window.Image();
-      img.src = imgproxyUrl(image, 1200);
+      img.src = imgproxyUrl(image, MAIN_IMAGE_WIDTH);
       img.onload = () => {
         setLoadedImages((prev) => new Set(prev).add(index));
       };
@@ -66,7 +69,7 @@ export function ImageSlider({ images, productName, imageAspectRatio = "SQUARE" }
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={imgproxyUrl(images[mainImageIndex], 1200)}
+          src={imgproxyUrl(images[mainImageIndex], MAIN_IMAGE_WIDTH)}
           alt={productName || "Tuotekuva"}
           className={cn(
             "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
@@ -118,7 +121,7 @@ export function ImageSlider({ images, productName, imageAspectRatio = "SQUARE" }
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={imgproxyUrl(image, 400)}
+              src={imgproxyUrl(image, THUMBNAIL_WIDTH)}
               alt={`${productName || "Tuote"} - pikkukuva`}
               className="absolute inset-0 w-full h-full object-cover"
               loading="lazy"
