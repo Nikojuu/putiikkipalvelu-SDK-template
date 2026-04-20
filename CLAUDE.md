@@ -196,6 +196,14 @@ To customize for a new store:
 
 ---
 
+## CMS Block Types
+
+Dynamic pages from the API contain a `blocks` JSON array. Each block has a `type` field — the storefront must render each type:
+
+`markdown`, `accordion`, `gallery`, `about`, `showcase`, `hero`, `latest_products`, `cta`, `carousel_content`, `opening_hours`, `image_grid`, `text_grid`, `table`
+
+---
+
 ## Route Structure
 
 **Storefront** (`src/app/(storefront)/`):

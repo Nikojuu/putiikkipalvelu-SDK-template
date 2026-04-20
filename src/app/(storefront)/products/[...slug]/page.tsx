@@ -1,20 +1,17 @@
-
-import { PaginationComponent } from "@/components/Product/Pagination";
-import { SearchInput } from "@/components/Product/SearchInput";
-import { SortOptions } from "@/components/Product/SortOptions";
-import { ProductCard } from "@/components/ProductCard";
-import Subtitle from "@/components/subtitle";
+import { Suspense } from "react";
 import { Metadata } from "next";
-import { unstable_noStore as noStore } from "next/cache";
-import CollectionPageSchema from "@/components/StructuredData/CollectionPageSchema";
-import BreadcrumbSchema from "@/components/StructuredData/BreadcrumbSchema";
+import { notFound } from "next/navigation";
+import { ProductGrid } from "@/components/Product/ProductGrid";
+import { ProductGridSkeleton } from "@/components/Product/ProductGridSkeleton";
+import { SearchInput } from "@/components/Product/SearchInput";
+import Subtitle from "@/components/subtitle";
+import {
+  ALL_PRODUCTS_SLUG,
+  findCategoryBySlug,
+  getCategories,
+} from "@/lib/categories";
 import { getStoreConfig, getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
-import { storefront } from "@/lib/storefront";
-import type {
-  ProductSortOption,
-  
-  Product,
-} from "@putiikkipalvelu/storefront-sdk";
+import type { ProductSortOption } from "@putiikkipalvelu/storefront-sdk";
 
 export async function generateMetadata({
   params,
@@ -23,26 +20,36 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 
   try {
-    const config = await getStoreConfig();
+    const [config, categories, { slug }] = await Promise.all([
+      getStoreConfig(),
+      getCategories(),
+      params,
+    ]);
     const domain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);
 
-    const { slug } = await params;
     const slugs = slug;
-    const categorySlug = slugs[slugs.length - 1]; // Get the last slug for category
+    const categorySlug = slugs[slugs.length - 1];
 
     let categoryName = "Tuotteet";
     let metaTitle: string | null = null;
     let metaDescription: string | null = null;
 
-    if (categorySlug && categorySlug !== "all-products") {
-      try {
-        const decodedSlug = decodeURIComponent(categorySlug);
-        const { category } = await storefront.categories.getBySlug(decodedSlug);
+    if (categorySlug && categorySlug !== ALL_PRODUCTS_SLUG) {
+      const decodedSlug = decodeURIComponent(categorySlug);
+      const category = findCategoryBySlug(categories, decodedSlug);
+      // If categories failed to load, skip metadata lookup rather than 404-ing
+      // every category page. The page body handles that inconsistency too.
+      if (!category && categories.length > 0) {
+        return {
+          title: "Sivua ei löytynyt",
+          description: "Etsimääsi kategoriaa ei löytynyt.",
+          robots: "noindex, nofollow",
+        };
+      }
+      if (category) {
         categoryName = category.name || "Tuotteet";
         metaTitle = category.metaTitle;
         metaDescription = category.metaDescription;
-      } catch (error) {
-        console.error("Error fetching category metadata for SEO:", error);
       }
     }
 
@@ -51,7 +58,6 @@ export async function generateMetadata({
     const twitterImage = getSEOValue(config.seo.twitterImageUrl, SEO_FALLBACKS.twitterImage);
     const twitterHandle = config.seo.twitterHandle;
 
-    // Use custom SEO fields if set, otherwise fall back to auto-generated
     const title = metaTitle || `${config.store.name} | ${categoryName}`;
     const description = metaDescription || `Tutustu ${config.store.name} verkkokaupan tuotteisiin kategoriassa ${categoryName}.`;
 
@@ -96,8 +102,6 @@ export async function generateMetadata({
   }
 }
 
-
-
 const ProductsPage = async ({
   params,
   searchParams,
@@ -105,137 +109,64 @@ const ProductsPage = async ({
   params: Promise<{ slug?: string[] }>;
   searchParams: Promise<{ page?: string; sort?: string; q?: string }>;
 }) => {
-  noStore();
-  const { slug } = await params;
-  const resolvedSearchParams = await searchParams;
-  const slugs = slug ?? ["all-products"];
+  const [{ slug }, resolvedSearchParams, config, categories] = await Promise.all([
+    params,
+    searchParams,
+    getStoreConfig(),
+    getCategories(),
+  ]);
+  const slugs = slug ?? [ALL_PRODUCTS_SLUG];
   const pageSize = 12;
   const currentPage = Number(resolvedSearchParams.page) || 1;
   const searchQuery = resolvedSearchParams.q?.trim() || "";
   const sort = (resolvedSearchParams.sort as ProductSortOption) || (searchQuery ? "relevance" : "newest");
 
-  // Get store config from backend
-  const config = await getStoreConfig();
   const domain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);
 
-  // Fetch products using SDK
-  const productPageData = await storefront.products.sorted({
-    slugs,
-    page: currentPage,
-    pageSize,
-    sort,
-    query: searchQuery || undefined,
-  });
+  const isAllProducts = slugs[0] === ALL_PRODUCTS_SLUG;
+  const lastSlug = slugs[slugs.length - 1];
 
-  const products: Product[] = productPageData?.products as Product[];
-  const categoryName = productPageData?.name;
-  const totalCount = productPageData?.totalCount ?? 0;
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const matchedCategory =
+    isAllProducts || !lastSlug
+      ? null
+      : findCategoryBySlug(categories, decodeURIComponent(lastSlug));
 
-  // Build breadcrumb items
-  const breadcrumbItems = [
-    { name: "Etusivu", url: domain },
-    { name: "Tuotteet", url: `${domain}/products` },
-  ];
-
-  if (slugs[0] !== "all-products") {
-    breadcrumbItems.push({
-      name: categoryName || "Kategoria",
-      url: `${domain}/products/${slugs.join("/")}`,
-    });
+  // If we have a category tree and the slug isn't in it, 404 immediately
+  // rather than bubbling an SDK error from the products fetch below
+  if (!isAllProducts && !matchedCategory && categories.length > 0) {
+    notFound();
   }
 
+  const heading = searchQuery
+    ? `Hakutulokset: "${searchQuery}"`
+    : matchedCategory?.name ?? "Tuotteet";
+
   return (
-    <>
-      {products && products.length > 0 && (
-        <>
-          <BreadcrumbSchema items={breadcrumbItems} />
-          <CollectionPageSchema
-            name={categoryName || "Tuotteet"}
-            description={`Tutustu ${config.store.name} verkkokaupan tuotteisiin kategoriassa ${categoryName}.`}
-            products={products}
-            categorySlug={slugs.join("/")}
-            totalCount={totalCount}
-            storeDomain={domain}
-          />
-        </>
-      )}
-      <section className="pt-8 md:pt-16 container mx-auto px-4 bg-warm-white">
-        <Subtitle subtitle={searchQuery ? `Hakutulokset: "${searchQuery}"` : (categoryName || "Tuotteet")} as="h1" />
-        {products && products.length > 0 ? (
-          <>
-            <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4 my-4">
-              <div className="w-full sm:w-72">
-                <SearchInput />
-              </div>
-              <SortOptions />
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-screen-xl mx-auto my-8">
-              {products.map((item) => (
-                <ProductCard item={item} key={item.id} imageAspectRatio={config.store.imageAspectRatio} />
-              ))}
-            </div>
-            {totalPages > 1 && (
-              <div className="my-8 ">
-                <PaginationComponent
-                  totalPages={totalPages}
-                  currentPage={currentPage}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="max-w-screen-xl mx-auto py-16 md:py-24">
-            <div className="max-w-screen-xl mx-auto flex justify-start mb-8">
-              <div className="w-full sm:w-72">
-                <SearchInput />
-              </div>
-            </div>
-            {searchQuery ? (
-              <div className="text-center">
-                <h3 className="text-xl md:text-2xl font-primary font-semibold text-charcoal mb-4">
-                  Haulla &quot;{searchQuery}&quot; ei löytynyt tuotteita
-                </h3>
-                <p className="text-sm md:text-base font-secondary text-charcoal/60 max-w-md mx-auto">
-                  Kokeile eri hakusanoja tai selaa kategorioita.
-                </p>
-              </div>
-            ) : (
-              <div className="relative bg-warm-white p-8 md:p-12 text-center">
-                {/* Card frame */}
-                <div className="absolute inset-0 border border-rose-gold/10 pointer-events-none" />
+    <section className="pt-8 md:pt-16 container mx-auto px-4 bg-warm-white">
+      <Subtitle subtitle={heading} as="h1" />
 
-                {/* Corner accents */}
-                <div className="absolute top-0 left-0 w-8 h-8 border-l border-t border-rose-gold/30" />
-                <div className="absolute top-0 right-0 w-8 h-8 border-r border-t border-rose-gold/30" />
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-l border-b border-rose-gold/30" />
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-r border-b border-rose-gold/30" />
+      <div className="max-w-screen-xl mx-auto flex justify-start my-4">
+        <div className="w-full sm:w-72">
+          <SearchInput />
+        </div>
+      </div>
 
-                {/* Diamond decoration */}
-                <div className="flex items-center justify-center gap-3 mb-6">
-                  <div className="w-1.5 h-1.5 bg-champagne/50 diamond-shape" />
-                  <div className="w-12 h-[1px] bg-gradient-to-r from-rose-gold/40 to-transparent" />
-                  <div className="w-2 h-2 bg-rose-gold/40 diamond-shape" />
-                  <div className="w-12 h-[1px] bg-gradient-to-l from-rose-gold/40 to-transparent" />
-                  <div className="w-1.5 h-1.5 bg-champagne/50 diamond-shape" />
-                </div>
-
-                <h3 className="text-xl md:text-2xl font-primary font-semibold text-charcoal mb-4">
-                  Tuotteita ei löytynyt
-                </h3>
-                <p className="text-sm md:text-base font-secondary text-charcoal/60 max-w-md mx-auto">
-                  Tällä kategorialla ei ole vielä tuotteita. Tutustu muihin
-                  kategorioihin.
-                </p>
-
-                {/* Bottom line */}
-                <div className="mt-6 h-[1px] bg-gradient-to-r from-transparent via-rose-gold/20 to-transparent max-w-xs mx-auto" />
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-    </>
+      <Suspense
+        key={`${slugs.join("/")}:${currentPage}:${sort}:${searchQuery}`}
+        fallback={<ProductGridSkeleton />}
+      >
+        <ProductGrid
+          slugs={slugs}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          sort={sort}
+          searchQuery={searchQuery}
+          storeName={config.store.name}
+          domain={domain}
+          imageAspectRatio={config.store.imageAspectRatio}
+        />
+      </Suspense>
+    </section>
   );
 };
 

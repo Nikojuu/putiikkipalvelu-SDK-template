@@ -1,26 +1,13 @@
 import { NavbarLinks } from "./NavbarLinks";
 import Cart from "../Cart/Cart";
 import MobileLinks from "./MobileLinks";
-import type { Campaign, Category, NavPage } from "@putiikkipalvelu/storefront-sdk";
+import type { Campaign, NavPage } from "@putiikkipalvelu/storefront-sdk";
 import CustomerDropdown from "./CustomerDropdown";
 import { getUser } from "@/lib/actions/authActions";
-import { storefront } from "@/lib/storefront";
-
-const getNavbarData = async (): Promise<{
-  categories: Category[];
-}> => {
-  try {
-    const categories = await storefront.categories.list();
-    return { categories };
-  } catch (error) {
-    console.error("Error fetching navbar data:", error);
-    return { categories: [] };
-  }
-};
+import { getCategories } from "@/lib/categories";
 
 const Navbar = async ({ campaigns, logoUrl, navPages }: { campaigns: Campaign[]; logoUrl: string; navPages: NavPage[] }) => {
-  const { categories } = await getNavbarData();
-  const { user } = await getUser();
+  const [categories, { user }] = await Promise.all([getCategories(), getUser()]);
 
   return (
     <>
