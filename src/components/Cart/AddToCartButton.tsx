@@ -12,9 +12,11 @@ import { trackAddToCart } from "@/lib/gtm";
 const AddToCartButton = ({
   product,
   selectedVariation,
+  ticketSalesClosed = false,
 }: {
   product: ProductDetail;
   selectedVariation?: ProductVariation;
+  ticketSalesClosed?: boolean;
 }) => {
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const addItem = useCart((state) => state.addItem);
@@ -38,8 +40,10 @@ const AddToCartButton = ({
   const isOutOfStock =
     availableStock !== null && currentCartQuantity >= availableStock;
 
+  const isDisabled = isOutOfStock || ticketSalesClosed;
+
   const handleAddToCart = async () => {
-    if (isOutOfStock) return; // Prevent action if out of stock
+    if (isDisabled) return;
 
     const result = await addItem(product, selectedVariation);
 
@@ -51,6 +55,15 @@ const AddToCartButton = ({
         toast({
           variant: "destructive",
           title: "Ostoskorin raja täynnä",
+          description: result.error,
+        });
+      } else if (
+        result.code === "TICKET_SALES_NOT_STARTED" ||
+        result.code === "TICKET_SALES_ENDED"
+      ) {
+        toast({
+          variant: "destructive",
+          title: "Lipun myyntiaika",
           description: result.error,
         });
       } else {
@@ -78,13 +91,15 @@ const AddToCartButton = ({
       onClick={handleAddToCart}
       size="lg"
       className="w-full"
-      disabled={isOutOfStock} // Disable button if out of stock
+      disabled={isDisabled}
     >
-      {isOutOfStock
-        ? "Ei varastossa"
-        : isSuccess
-          ? "Lisätty"
-          : "Lisää ostoskoriin"}
+      {ticketSalesClosed
+        ? "Myynti ei käynnissä"
+        : isOutOfStock
+          ? "Ei varastossa"
+          : isSuccess
+            ? "Lisätty"
+            : "Lisää ostoskoriin"}
     </Button>
   );
 };

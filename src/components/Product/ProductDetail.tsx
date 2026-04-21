@@ -25,10 +25,38 @@ import type {
   ProductDetail as ProductDetailType,
   ProductVariation,
   ImageAspectRatio,
+  ProductTicketInfo,
 } from "@putiikkipalvelu/storefront-sdk";
 import WishlistButton from "./WishlistButton";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackViewItem } from "@/lib/gtm";
+
+type TicketSalesState =
+  | { status: "not_started"; startsAt: Date }
+  | { status: "active" }
+  | { status: "ended" };
+
+function formatDateTimeFi(date: Date): string {
+  return date.toLocaleString("fi-FI", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getTicketSalesState(
+  ticketInfo: ProductTicketInfo
+): TicketSalesState {
+  const now = new Date();
+  const start = ticketInfo.salesStart ? new Date(ticketInfo.salesStart) : null;
+  const end = ticketInfo.salesEnd ? new Date(ticketInfo.salesEnd) : null;
+
+  if (start && now < start) return { status: "not_started", startsAt: start };
+  if (end && now > end) return { status: "ended" };
+  return { status: "active" };
+}
 
 const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: ProductDetailType; imageAspectRatio?: ImageAspectRatio }) => {
   const hasVariations = product.variations?.length > 0;
@@ -68,6 +96,10 @@ const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: Prod
     if (salePrice == null || salePrice >= (price ?? 0)) return false;
     return isSaleActive(saleStartDate, saleEndDate);
   };
+
+  const ticketSalesState = product.ticketInfo
+    ? getTicketSalesState(product.ticketInfo)
+    : null;
 
   return (
     <div className="max-w-screen-xl mx-auto py-8 md:py-12">
@@ -144,6 +176,20 @@ const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: Prod
                   __html: sanitizeHtml(product.description),
                 }}
               />
+            </div>
+          )}
+
+          {/* Ticket sales window */}
+          {ticketSalesState && ticketSalesState.status !== "active" && (
+            <div
+              className="mb-8 p-4 border border-rose-gold/30 bg-cream/50"
+              role="status"
+            >
+              <p className="text-sm font-secondary text-charcoal/80">
+                {ticketSalesState.status === "not_started"
+                  ? `Lippujen myynti alkaa ${formatDateTimeFi(ticketSalesState.startsAt)}`
+                  : "Lippujen myynti on päättynyt"}
+              </p>
             </div>
           )}
 
@@ -241,6 +287,9 @@ const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: Prod
             <AddToCartButton
               product={product}
               selectedVariation={selectedVariation}
+              ticketSalesClosed={
+                ticketSalesState !== null && ticketSalesState.status !== "active"
+              }
             />
           </div>
         </div>

@@ -112,6 +112,11 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
           `${validation.changes.priceChanged} tuotteen hinta päivitettiin`
         );
       }
+      if (validation.changes.ticketSalesWindowRemoved > 0) {
+        messages.push(
+          `${validation.changes.ticketSalesWindowRemoved} lippua poistettiin: myyntiaika ei ole käynnissä`
+        );
+      }
       if (validation.changes.discountCouponRemoved) {
         messages.push("Alennuskoodi poistettiin kampanja-alennuksen vuoksi");
       }
