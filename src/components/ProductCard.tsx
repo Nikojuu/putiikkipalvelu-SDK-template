@@ -72,6 +72,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio
               </div>
             )}
 
+            {/* Digital badge */}
+            {item.isDigital && (
+              <div
+                className={`absolute ${
+                  priceInfo.isOnSale && priceInfo.salePercent
+                    ? "top-12"
+                    : "top-4"
+                } left-4 z-20`}
+              >
+                <div className="bg-sage-green text-warm-white text-xs font-secondary tracking-wider px-3 py-1.5">
+                  Digitaalinen
+                </div>
+              </div>
+            )}
+
             {/* Share button - appears on hover */}
             <div className="absolute top-4 right-4 z-20 opacity-0 transform translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500">
               <button

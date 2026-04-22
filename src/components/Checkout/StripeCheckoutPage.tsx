@@ -41,8 +41,10 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   // Cart total after discount code (used for free shipping threshold)
   const cartTotalAfterDiscount = cartTotal - discountAmount;
 
-  // Ticket-only carts don't need shipping
-  const requiresShipping = cartItems.some((item) => !item.isTicket);
+  // Ticket-only / digital-only / mixed non-shippable carts don't need shipping
+  const requiresShipping = cartItems.some(
+    (item) => !item.isTicket && !item.isDigital
+  );
 
   // Check if any ticket requires holder names
   const ticketItemsRequiringHolder = cartItems.filter(

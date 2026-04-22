@@ -11,7 +11,9 @@ import {
   Clock,
   CreditCard,
   Plane,
+  Download,
 } from "lucide-react";
+import Link from "next/link";
 
 // Define the order status enum
 enum OrderStatus {
@@ -56,6 +58,7 @@ interface Order {
   createdAt: string;
   OrderLineItems: OrderLineItem[];
   trackingNumber: string | null;
+  hasDigitalDownloads?: boolean;
 }
 
 interface OrdersResponse {
@@ -269,6 +272,22 @@ const OrderCard = ({ order }: { order: Order }) => {
               </div>
             </>
           )}
+
+          {/* Digital Downloads */}
+          {order.hasDigitalDownloads &&
+            order.status !== OrderStatus.PENDING &&
+            order.status !== OrderStatus.FAILED && (
+              <>
+                <div className="my-3 h-[1px] bg-gradient-to-r from-rose-gold/20 to-transparent" />
+                <Link
+                  href={`/orders/${order.id}/downloads`}
+                  className="inline-flex items-center gap-2 h-10 px-5 rounded-md bg-charcoal text-warm-white text-sm font-semibold tracking-wide shadow-md hover:bg-deep-burgundy hover:shadow-lg transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Lataa digitaaliset tuotteet</span>
+                </Link>
+              </>
+            )}
         </div>
       </div>
     </div>

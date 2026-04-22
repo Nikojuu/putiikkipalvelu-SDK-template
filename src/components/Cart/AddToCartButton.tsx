@@ -40,7 +40,11 @@ const AddToCartButton = ({
   const isOutOfStock =
     availableStock !== null && currentCartQuantity >= availableStock;
 
-  const isDisabled = isOutOfStock || ticketSalesClosed;
+  // Digital products can only be in cart once — block duplicate adds
+  const isDigitalAlreadyInCart =
+    !!product.isDigital && currentCartQuantity > 0;
+
+  const isDisabled = isOutOfStock || ticketSalesClosed || isDigitalAlreadyInCart;
 
   const handleAddToCart = async () => {
     if (isDisabled) return;
@@ -64,6 +68,15 @@ const AddToCartButton = ({
         toast({
           variant: "destructive",
           title: "Lipun myyntiaika",
+          description: result.error,
+        });
+      } else if (
+        result.code === "DIGITAL_QUANTITY_LIMIT" ||
+        result.code === "DIGITAL_ALREADY_IN_CART"
+      ) {
+        toast({
+          variant: "destructive",
+          title: "Digitaalinen tuote",
           description: result.error,
         });
       } else {
@@ -97,9 +110,11 @@ const AddToCartButton = ({
         ? "Myynti ei käynnissä"
         : isOutOfStock
           ? "Ei varastossa"
-          : isSuccess
-            ? "Lisätty"
-            : "Lisää ostoskoriin"}
+          : isDigitalAlreadyInCart
+            ? "Jo ostoskorissa"
+            : isSuccess
+              ? "Lisätty"
+              : "Lisää ostoskoriin"}
     </Button>
   );
 };

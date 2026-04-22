@@ -110,29 +110,35 @@ export default function CartItem({
             </div>
           )}
 
-          {/* Quantity controls */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => decrementQuantity(product.id, variation?.id)}
-              disabled={displayQuantity <= 1}
-              className="w-7 h-7 flex items-center justify-center border border-charcoal/20 text-charcoal/70 transition-colors duration-300 hover:border-rose-gold hover:text-rose-gold disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Minus className="w-3 h-3" />
-            </button>
-            <span className="w-8 text-center text-sm font-secondary text-charcoal">
-              {displayQuantity}
-            </span>
-            <button
-              onClick={() => incrementQuantity(product.id, variation?.id)}
-              disabled={
-                isOutOfStock ||
-                (!isUnlimitedStock && displayQuantity >= stockQuantity)
-              }
-              className="w-7 h-7 flex items-center justify-center border border-charcoal/20 text-charcoal/70 transition-colors duration-300 hover:border-rose-gold hover:text-rose-gold disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-          </div>
+          {/* Quantity controls — hidden for digital products (always qty 1) */}
+          {cartItem?.isDigital || product.isDigital ? (
+            <div className="text-xs font-secondary text-charcoal/60 italic">
+              Digitaalinen tuote — 1 kpl
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => decrementQuantity(product.id, variation?.id)}
+                disabled={displayQuantity <= 1}
+                className="w-7 h-7 flex items-center justify-center border border-charcoal/20 text-charcoal/70 transition-colors duration-300 hover:border-rose-gold hover:text-rose-gold disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="w-8 text-center text-sm font-secondary text-charcoal">
+                {displayQuantity}
+              </span>
+              <button
+                onClick={() => incrementQuantity(product.id, variation?.id)}
+                disabled={
+                  isOutOfStock ||
+                  (!isUnlimitedStock && displayQuantity >= stockQuantity)
+                }
+                className="w-7 h-7 flex items-center justify-center border border-charcoal/20 text-charcoal/70 transition-colors duration-300 hover:border-rose-gold hover:text-rose-gold disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Price and remove */}

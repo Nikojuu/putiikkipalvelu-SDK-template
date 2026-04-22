@@ -22,6 +22,7 @@ export const CampaignAddedCartItems = ({
     <>
       {calculatedItems.map(({ item, paidQuantity, freeQuantity }, i) => {
         const { product, variation, cartQuantity } = item;
+        const isDigital = !!(item.isDigital || product.isDigital);
 
         // Create unique key for this item
         const itemKey = variation
@@ -148,31 +149,41 @@ export const CampaignAddedCartItems = ({
                   )}
                 </div>
 
-                {/* Quantity controls */}
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => decrementQuantity(product.id, variation?.id)}
-                    disabled={cartQuantity === 1}
-                    className="w-8 h-8 flex items-center justify-center border border-charcoal/20 text-charcoal/70 transition-colors duration-300 hover:border-rose-gold hover:text-rose-gold disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Minus className="w-4 h-4" />
-                    <span className="sr-only">Vähennä määrää</span>
-                  </button>
-                  <span className="w-8 text-center text-sm font-secondary text-charcoal">
-                    {cartQuantity || 0}
-                  </span>
-                  <button
-                    onClick={() => incrementQuantity(product.id, variation?.id)}
-                    disabled={
-                      isOutOfStock ||
-                      (!isUnlimitedStock && cartQuantity >= stockQuantity)
-                    }
-                    className="w-8 h-8 flex items-center justify-center border border-charcoal/20 text-charcoal/70 transition-colors duration-300 hover:border-rose-gold hover:text-rose-gold disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="sr-only">Lisää määrää</span>
-                  </button>
-                </div>
+                {/* Quantity controls — hidden for digital products (always 1) */}
+                {isDigital ? (
+                  <div className="text-xs font-secondary text-charcoal/60 italic">
+                    Digitaalinen tuote — 1 kpl
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() =>
+                        decrementQuantity(product.id, variation?.id)
+                      }
+                      disabled={cartQuantity === 1}
+                      className="w-8 h-8 flex items-center justify-center border border-charcoal/20 text-charcoal/70 transition-colors duration-300 hover:border-rose-gold hover:text-rose-gold disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Minus className="w-4 h-4" />
+                      <span className="sr-only">Vähennä määrää</span>
+                    </button>
+                    <span className="w-8 text-center text-sm font-secondary text-charcoal">
+                      {cartQuantity || 0}
+                    </span>
+                    <button
+                      onClick={() =>
+                        incrementQuantity(product.id, variation?.id)
+                      }
+                      disabled={
+                        isOutOfStock ||
+                        (!isUnlimitedStock && cartQuantity >= stockQuantity)
+                      }
+                      className="w-8 h-8 flex items-center justify-center border border-charcoal/20 text-charcoal/70 transition-colors duration-300 hover:border-rose-gold hover:text-rose-gold disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="sr-only">Lisää määrää</span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Campaign info */}
                 {freeQuantity > 0 && (
