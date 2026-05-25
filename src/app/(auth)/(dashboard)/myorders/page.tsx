@@ -12,6 +12,7 @@ import {
   CreditCard,
   Plane,
   Download,
+  Undo2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -285,6 +286,24 @@ const OrderCard = ({ order }: { order: Order }) => {
                 >
                   <Download className="w-4 h-4" />
                   <span>Lataa digitaaliset tuotteet</span>
+                </Link>
+              </>
+            )}
+
+          {/* Withdrawal button — KKV peruutustoiminto.
+              Always available; the merchant evaluates eligibility per the
+              14-day window and exempt categories after the notice is filed. */}
+          {order.status !== OrderStatus.CANCELLED &&
+            order.status !== OrderStatus.REFUNDED &&
+            order.status !== OrderStatus.FAILED && (
+              <>
+                <div className="my-3 h-[1px] bg-gradient-to-r from-rose-gold/20 to-transparent" />
+                <Link
+                  href={`/peruutus?orderNumber=${order.orderNumber}`}
+                  className="inline-flex items-center gap-2 text-sm font-secondary text-charcoal/70 hover:text-rose-gold transition-colors"
+                >
+                  <Undo2 className="w-4 h-4" />
+                  <span>Peruuta tilaus</span>
                 </Link>
               </>
             )}

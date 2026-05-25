@@ -102,6 +102,12 @@ export function Footer({ logoUrl, storeName, email, phone, instagramUrl, analyti
               >
                 Maksu- ja toimitusehdot
               </Link>
+              <Link
+                href="/peruutus"
+                className="text-sm font-secondary text-warm-white/70 hover:text-rose-gold transition-colors duration-300"
+              >
+                Peruuta tilaus
+              </Link>
               <CookieSettingsLink analytics={analytics} />
             </nav>
           </div>
