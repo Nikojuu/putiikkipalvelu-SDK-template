@@ -1,4 +1,5 @@
 import { getUser } from "@/lib/actions/authActions";
+import { getStoreConfig } from "@/lib/storeConfig";
 import { redirect } from "next/navigation";
 
 import { imgproxyUrl } from "@/lib/imgproxy-loader";
@@ -142,7 +143,13 @@ const getStatusInfo = (status: OrderStatus) => {
 };
 
 // Component for individual order card
-const OrderCard = ({ order }: { order: Order }) => {
+const OrderCard = ({
+  order,
+  withdrawalEnabled,
+}: {
+  order: Order;
+  withdrawalEnabled: boolean;
+}) => {
   const statusInfo = getStatusInfo(order.status);
   const orderDate = new Date(order.createdAt).toLocaleDateString("fi-FI");
   const totalAmountEur = (order.totalAmount / 100).toFixed(2);
@@ -291,9 +298,10 @@ const OrderCard = ({ order }: { order: Order }) => {
             )}
 
           {/* Withdrawal button — KKV peruutustoiminto.
-              Always available; the merchant evaluates eligibility per the
-              14-day window and exempt categories after the notice is filed. */}
-          {order.status !== OrderStatus.CANCELLED &&
+              Gated on the store-level `withdrawalEnabled` flag so exempt-only
+              stores (e.g. dated-tickets-only catalogs) don't show it. */}
+          {withdrawalEnabled &&
+            order.status !== OrderStatus.CANCELLED &&
             order.status !== OrderStatus.REFUNDED &&
             order.status !== OrderStatus.FAILED && (
               <>
@@ -320,7 +328,12 @@ const MyOrdersPage = async () => {
     redirect("/login");
   }
 
-  const ordersData = await getOrders(user.id);
+  const [ordersData, storeConfig] = await Promise.all([
+    getOrders(user.id),
+    getStoreConfig(),
+  ]);
+  const withdrawalEnabled =
+    storeConfig.features?.withdrawalEnabled ?? true;
 
   // Filter out cancelled and failed orders
   const filteredOrders =
@@ -384,7 +397,11 @@ const MyOrdersPage = async () => {
                 new Date(a.createdAt).getTime()
             )
             .map((order) => (
-              <OrderCard key={order.id} order={order} />
+              <OrderCard
+                key={order.id}
+                order={order}
+                withdrawalEnabled={withdrawalEnabled}
+              />
             ))}
         </div>
       )}
