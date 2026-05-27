@@ -85,14 +85,21 @@ const PeruutusRoute = async ({
           <div className="rounded-md border border-rose-gold/30 bg-warm-white p-6 text-sm font-secondary text-charcoal/80">
             <p>
               Jos sinulla on tilaukseesi liittyvää kysyttävää, ota yhteyttä
-              asiakaspalveluun:{" "}
-              <a
-                href={`mailto:${supportEmail}`}
-                className="underline text-charcoal hover:text-deep-burgundy"
-              >
-                {supportEmail}
-              </a>
-              .
+              asiakaspalveluun
+              {supportEmail ? (
+                <>
+                  :{" "}
+                  <a
+                    href={`mailto:${supportEmail}`}
+                    className="underline text-charcoal hover:text-deep-burgundy"
+                  >
+                    {supportEmail}
+                  </a>
+                  .
+                </>
+              ) : (
+                "."
+              )}
             </p>
           </div>
         </div>

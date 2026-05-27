@@ -483,7 +483,11 @@ export function WithdrawalForm({ defaultOrderNumber, prefill }: Props) {
                     render={({ field: nameField }) => (
                       <FormItem className="flex-1">
                         <FormControl>
-                          <Input {...nameField} placeholder="Tuotteen nimi" />
+                          <Input
+                            {...nameField}
+                            placeholder="Tuotteen nimi"
+                            readOnly={locked}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -528,6 +532,7 @@ export function WithdrawalForm({ defaultOrderNumber, prefill }: Props) {
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={locked}
                 onClick={() =>
                   appendItem({ productName: "", quantity: 1 })
                 }
