@@ -111,6 +111,7 @@ export default async function RootLayout({
   const storePhone = storeConfig.store.phone;
   const instagramUrl = storeConfig.seo.instagramUrl;
   const analytics = storeConfig.analytics;
+  const withdrawalEnabled = storeConfig.features?.withdrawalEnabled ?? true;
 
   return (
     <html
@@ -143,7 +144,7 @@ export default async function RootLayout({
           <Navbar campaigns={campaigns} logoUrl={logoUrl} navPages={navPages} />
         </StickyNavbar>
         <main className="min-h-[75vh] max-w-[3500px]">{children}</main>
-        <Footer logoUrl={logoUrl} storeName={storeName} email={storeEmail} phone={storePhone} instagramUrl={instagramUrl} analytics={analytics} />
+        <Footer logoUrl={logoUrl} storeName={storeName} email={storeEmail} phone={storePhone} instagramUrl={instagramUrl} analytics={analytics} withdrawalEnabled={withdrawalEnabled} />
 
         <Toaster />
         <ConsentInit gtmEnabled={!!analytics?.gtmContainerId} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Trash2, ArrowLeft, CheckCircle, XCircle } from "lucide-react";
@@ -120,13 +120,20 @@ export function WithdrawalForm({ defaultOrderNumber, prefill }: Props) {
   });
 
   const scope = form.watch("scope");
-  const items = form.watch("items") ?? [];
+  // useFieldArray gives us stable field.id keys + only re-renders the rows
+  // that change — avoids the full-form re-render on every keystroke that
+  // form.watch("items") would cause with a dynamic list.
+  const {
+    fields: items,
+    append: appendItem,
+    remove: removeItem,
+  } = useFieldArray({ control: form.control, name: "items" });
 
-  const onContinue = (data: FormValues) => {
-    // Strip out empty items when scope = full
-    if (data.scope === "full") {
-      form.setValue("items", undefined);
-    }
+  const onContinue = () => {
+    // Don't mutate items here — onSubmit filters by scope at submit time, and
+    // the confirm view only renders items when scope === "partial". Clearing
+    // items on "full" would wipe the user's rows if they navigate back and
+    // re-pick "partial".
     setStep("confirm");
   };
 
@@ -468,15 +475,19 @@ export function WithdrawalForm({ defaultOrderNumber, prefill }: Props) {
           {scope === "partial" ? (
             <div className="space-y-3">
               <FormLabel>Peruutettavat tuotteet</FormLabel>
-              {items.map((_, idx) => (
-                <div key={idx} className="flex items-start gap-2">
+              {items.map((field, idx) => (
+                <div key={field.id} className="flex items-start gap-2">
                   <FormField
                     control={form.control}
                     name={`items.${idx}.productName`}
-                    render={({ field }) => (
+                    render={({ field: nameField }) => (
                       <FormItem className="flex-1">
                         <FormControl>
-                          <Input {...field} placeholder="Tuotteen nimi" />
+                          <Input
+                            {...nameField}
+                            placeholder="Tuotteen nimi"
+                            readOnly={locked}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -485,15 +496,15 @@ export function WithdrawalForm({ defaultOrderNumber, prefill }: Props) {
                   <FormField
                     control={form.control}
                     name={`items.${idx}.quantity`}
-                    render={({ field }) => (
+                    render={({ field: qtyField }) => (
                       <FormItem className="w-24">
                         <FormControl>
                           <Input
                             type="number"
                             min={1}
-                            {...field}
+                            {...qtyField}
                             onChange={(e) =>
-                              field.onChange(
+                              qtyField.onChange(
                                 e.target.value === ""
                                   ? 0
                                   : Number(e.target.value)
@@ -509,15 +520,7 @@ export function WithdrawalForm({ defaultOrderNumber, prefill }: Props) {
                     type="button"
                     variant="outline"
                     size="icon"
-                    onClick={() => {
-                      const next = items.filter((_, i) => i !== idx);
-                      form.setValue(
-                        "items",
-                        next.length > 0
-                          ? next
-                          : [{ productName: "", quantity: 1 }]
-                      );
-                    }}
+                    onClick={() => removeItem(idx)}
                     disabled={items.length <= 1}
                     aria-label="Poista rivi"
                   >
@@ -529,11 +532,9 @@ export function WithdrawalForm({ defaultOrderNumber, prefill }: Props) {
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={locked}
                 onClick={() =>
-                  form.setValue("items", [
-                    ...items,
-                    { productName: "", quantity: 1 },
-                  ])
+                  appendItem({ productName: "", quantity: 1 })
                 }
               >
                 <Plus className="w-4 h-4 mr-1" />

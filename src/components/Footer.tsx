@@ -12,9 +12,11 @@ interface FooterProps {
   phone?: string | null;
   instagramUrl?: string | null;
   analytics?: AnalyticsConfig | undefined;
+  /** KKV peruutustoiminto — when false, the footer link is hidden. */
+  withdrawalEnabled?: boolean;
 }
 
-export function Footer({ logoUrl, storeName, email, phone, instagramUrl, analytics }: FooterProps) {
+export function Footer({ logoUrl, storeName, email, phone, instagramUrl, analytics, withdrawalEnabled = true }: FooterProps) {
   // Extract Instagram handle from URL for display
   const instagramHandle = instagramUrl
     ? instagramUrl.split("/").filter(Boolean).pop() || storeName.toLowerCase().replace(/\s+/g, "_")
@@ -102,12 +104,14 @@ export function Footer({ logoUrl, storeName, email, phone, instagramUrl, analyti
               >
                 Maksu- ja toimitusehdot
               </Link>
-              <Link
-                href="/peruutus"
-                className="text-sm font-secondary text-warm-white/70 hover:text-rose-gold transition-colors duration-300"
-              >
-                Peruuta tilaus
-              </Link>
+              {withdrawalEnabled ? (
+                <Link
+                  href="/peruutus"
+                  className="text-sm font-secondary text-warm-white/70 hover:text-rose-gold transition-colors duration-300"
+                >
+                  Peruuta tilaus
+                </Link>
+              ) : null}
               <CookieSettingsLink analytics={analytics} />
             </nav>
           </div>

@@ -68,6 +68,44 @@ const PeruutusRoute = async ({
 }) => {
   void SEO_ENABLED;
   const params = await searchParams;
+  const storeConfig = await getStoreConfig();
+  const withdrawalEnabled = storeConfig.features?.withdrawalEnabled ?? true;
+  const supportEmail = storeConfig.store.email;
+
+  // Function-disabled fallback — stale email links or bookmarks shouldn't 404.
+  if (!withdrawalEnabled) {
+    return (
+      <section className="pt-8 md:pt-16 pb-16 bg-warm-white">
+        <Subtitle
+          subtitle="Peruutusilmoitus"
+          description="Peruutustoiminto ei ole käytettävissä."
+          as="h1"
+        />
+        <div className="container mx-auto px-4 max-w-xl">
+          <div className="rounded-md border border-rose-gold/30 bg-warm-white p-6 text-sm font-secondary text-charcoal/80">
+            <p>
+              Jos sinulla on tilaukseesi liittyvää kysyttävää, ota yhteyttä
+              asiakaspalveluun
+              {supportEmail ? (
+                <>
+                  :{" "}
+                  <a
+                    href={`mailto:${supportEmail}`}
+                    className="underline text-charcoal hover:text-deep-burgundy"
+                  >
+                    {supportEmail}
+                  </a>
+                  .
+                </>
+              ) : (
+                "."
+              )}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const resolution: TokenResolution = params.token
     ? await resolveTokenSafely(params.token)
@@ -79,7 +117,7 @@ const PeruutusRoute = async ({
           name: resolution.data.customerName,
           email: resolution.data.customerEmail,
           orderNumber: resolution.data.orderNumber,
-          lineItems: resolution.data.items,
+          lineItems: resolution.data.items ?? [],
         }
       : undefined;
 
@@ -94,7 +132,7 @@ const PeruutusRoute = async ({
     <section className="pt-8 md:pt-16 pb-16 bg-warm-white">
       <Subtitle
         subtitle="Peruutusilmoitus"
-        description="Voit peruuttaa tilauksesi 14 päivän kuluessa toimituksesta. Täytä tämä lomake, niin lähetämme vahvistuksen sähköpostiisi."
+        description="Tee peruutusilmoitus tilauksestasi. Lähetämme vahvistuksen sähköpostiisi. Tarkemmat peruutusehdot löydät palautusehdot-sivulta."
         as="h1"
       />
 
