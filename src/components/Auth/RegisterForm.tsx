@@ -26,6 +26,7 @@ const RegisterSchema = z.object({
   lastName: z.string().min(1, "Sukunimi on pakollinen"),
   email: z.string().email("Virheellinen sähköpostiosoite"),
   password: z.string().min(8, "Salasanan on oltava vähintään 8 merkkiä pitkä"),
+  subscribeToNewsletter: z.boolean().default(false),
 });
 
 export default function RegisterForm() {
@@ -40,12 +41,15 @@ export default function RegisterForm() {
       lastName: "",
       email: "",
       password: "",
+      subscribeToNewsletter: false,
     },
   });
   async function onSubmit(data: z.infer<typeof RegisterSchema>) {
     setIsLoading(true);
     const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+    Object.entries(data).forEach(([key, value]) =>
+      formData.append(key, String(value))
+    );
 
     try {
       const result = await registerCustomer(formData);
@@ -208,6 +212,35 @@ export default function RegisterForm() {
                         </div>
                       </FormControl>
                       <FormMessage className="text-sm font-secondary text-deep-burgundy" />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="subscribeToNewsletter"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start gap-3 space-y-0">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          name={field.name}
+                          ref={field.ref}
+                          checked={field.value}
+                          onBlur={field.onBlur}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-rose-gold"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-secondary text-charcoal cursor-pointer">
+                          Tilaa uutiskirje
+                        </FormLabel>
+                        <p className="text-xs font-secondary text-charcoal/50">
+                          Saat tietoa uutuuksista ja tarjouksista. Voit perua
+                          tilauksen milloin tahansa.
+                        </p>
+                      </div>
                     </FormItem>
                   )}
                 />

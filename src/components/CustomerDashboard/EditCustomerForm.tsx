@@ -32,6 +32,7 @@ type User = {
   firstName: string;
   lastName: string;
   email: string;
+  isSubscribedToNewsletter?: boolean;
 };
 
 type FormState = {
@@ -275,6 +276,36 @@ const EditCustomerForm = ({ user }: { user: User }) => {
                 </p>
               )}
             </div>
+
+            <div className="h-[1px] bg-gradient-to-r from-transparent via-rose-gold/30 to-transparent" />
+
+            <label
+              htmlFor="subscribeToNewsletter"
+              className="flex items-center justify-between gap-4 cursor-pointer"
+            >
+              <div className="space-y-1">
+                <span className="block text-sm font-secondary text-charcoal">
+                  Uutiskirje
+                </span>
+                <span className="block text-xs font-secondary text-charcoal/50">
+                  Saat tietoa uutuuksista ja tarjouksista. Voit perua tilauksen
+                  milloin tahansa.
+                </span>
+              </div>
+              <span className="relative inline-flex shrink-0">
+                <input
+                  type="checkbox"
+                  id="subscribeToNewsletter"
+                  name="subscribeToNewsletter"
+                  value="true"
+                  defaultChecked={user.isSubscribedToNewsletter ?? false}
+                  disabled={isPending}
+                  className="peer sr-only"
+                />
+                <span className="h-6 w-11 rounded-full bg-charcoal/20 transition-colors peer-checked:bg-rose-gold peer-disabled:opacity-50" />
+                <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-warm-white shadow transition-transform peer-checked:translate-x-5" />
+              </span>
+            </label>
 
             <div className="h-[1px] bg-gradient-to-r from-transparent via-rose-gold/30 to-transparent" />
 

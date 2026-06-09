@@ -19,6 +19,7 @@ const RegisterSchema = z.object({
   lastName: z.string().min(1, "Sukunimi on pakollinen"),
   email: z.string().email("Virheellinen sähköpostiosoite"),
   password: z.string().min(8, "Salasanan on oltava vähintään 8 merkkiä pitkä"),
+  subscribeToNewsletter: z.boolean().optional().default(false),
 });
 
 const LoginSchema = z.object({
@@ -30,6 +31,7 @@ const EditProfileSchema = z.object({
   firstName: z.string().min(1, "Etunimi on pakollinen"),
   lastName: z.string().min(1, "Sukunimi on pakollinen"),
   email: z.string().email("Virheellinen sähköpostiosoite"),
+  subscribeToNewsletter: z.boolean().optional().default(false),
 });
 
 const ForgotPasswordSchema = z.object({
@@ -110,13 +112,15 @@ export async function registerCustomer(formData: FormData) {
     lastName: formData.get("lastName"),
     email: formData.get("email"),
     password: formData.get("password"),
+    subscribeToNewsletter: formData.get("subscribeToNewsletter") === "true",
   });
 
   if (!validatedFields.success) {
     return { error: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { firstName, lastName, email, password } = validatedFields.data;
+  const { firstName, lastName, email, password, subscribeToNewsletter } =
+    validatedFields.data;
 
   try {
     const response = await storefront.customer.register({
@@ -124,6 +128,7 @@ export async function registerCustomer(formData: FormData) {
       lastName,
       email,
       password,
+      isSubscribedToNewsletter: subscribeToNewsletter,
     });
 
     if (!response.success || !response.customer) {
@@ -272,13 +277,15 @@ export async function editCustomerProfile(formData: FormData) {
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     email: formData.get("email"),
+    subscribeToNewsletter: formData.get("subscribeToNewsletter") === "true",
   });
 
   if (!validatedFields.success) {
     return { error: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { firstName, lastName, email } = validatedFields.data;
+  const { firstName, lastName, email, subscribeToNewsletter } =
+    validatedFields.data;
 
   const sessionId = await getSessionId();
   if (!sessionId) {
@@ -290,6 +297,7 @@ export async function editCustomerProfile(formData: FormData) {
       firstName,
       lastName,
       email,
+      isSubscribedToNewsletter: subscribeToNewsletter,
     });
 
     return {
