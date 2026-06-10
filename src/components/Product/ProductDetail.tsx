@@ -58,7 +58,7 @@ function getTicketSalesState(
   return { status: "active" };
 }
 
-const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: ProductDetailType; imageAspectRatio?: ImageAspectRatio }) => {
+const ProductDetail = ({ product, imageAspectRatio = "SQUARE", customerAccountsEnabled = true }: { product: ProductDetailType; imageAspectRatio?: ImageAspectRatio; customerAccountsEnabled?: boolean }) => {
   const hasVariations = product.variations?.length > 0;
   const [selectedVariation, setSelectedVariation] = useState<
     ProductVariation | undefined
@@ -280,10 +280,12 @@ const ProductDetail = ({ product, imageAspectRatio = "SQUARE" }: { product: Prod
 
           {/* Wishlist & Add to Cart Buttons */}
           <div className="mt-auto pt-6 space-y-3">
-            <WishlistButton
-              product={product}
-              selectedVariation={selectedVariation}
-            />
+            {customerAccountsEnabled && (
+              <WishlistButton
+                product={product}
+                selectedVariation={selectedVariation}
+              />
+            )}
             <AddToCartButton
               product={product}
               selectedVariation={selectedVariation}

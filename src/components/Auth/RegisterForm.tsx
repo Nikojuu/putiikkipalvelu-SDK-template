@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-import { CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
+import { CheckCircle, XCircle, Eye, EyeOff, MailCheck } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Subtitle from "@/components/subtitle";
 import { registerCustomer } from "@/lib/actions/authActions";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const RegisterSchema = z.object({
   firstName: z.string().min(1, "Etunimi on pakollinen"),
@@ -32,7 +32,7 @@ const RegisterSchema = z.object({
 export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -82,7 +82,7 @@ export default function RegisterForm() {
           ),
         });
         form.reset();
-        router.push("/mypage");
+        setRegisteredEmail(data.email);
       }
     } finally {
       setIsLoading(false);
@@ -110,10 +110,39 @@ export default function RegisterForm() {
             <div className="flex items-center gap-3 mb-8">
               <div className="w-1.5 h-1.5 bg-rose-gold/60 diamond-shape" />
               <h2 className="font-primary text-2xl md:text-3xl text-charcoal">
-                Liity mukaan
+                {registeredEmail ? "Tarkista sähköpostisi" : "Liity mukaan"}
               </h2>
             </div>
 
+            {registeredEmail ? (
+              <div className="space-y-6">
+                <div className="flex items-start space-x-3 p-4 bg-rose-gold/10 border border-rose-gold/30">
+                  <MailCheck className="h-5 w-5 text-rose-gold flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-secondary text-charcoal/80">
+                      Tilisi on luotu! Lähetimme vahvistuslinkin osoitteeseen{" "}
+                      <span className="font-medium text-charcoal">
+                        {registeredEmail}
+                      </span>
+                      .
+                    </p>
+                    <p className="text-sm font-secondary text-charcoal/60">
+                      Vahvista sähköpostiosoitteesi ennen kirjautumista. Linkki
+                      on voimassa 24 tuntia.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="h-[1px] bg-gradient-to-r from-transparent via-rose-gold/30 to-transparent" />
+
+                <Link
+                  href="/login"
+                  className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-charcoal text-warm-white font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:bg-rose-gold"
+                >
+                  Siirry kirjautumaan
+                </Link>
+              </div>
+            ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -257,6 +286,7 @@ export default function RegisterForm() {
                 </button>
               </form>
             </Form>
+            )}
           </div>
         </div>
       </div>

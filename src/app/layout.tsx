@@ -112,6 +112,8 @@ export default async function RootLayout({
   const instagramUrl = storeConfig.seo.instagramUrl;
   const analytics = storeConfig.analytics;
   const withdrawalEnabled = storeConfig.features?.withdrawalEnabled ?? true;
+  const customerAccountsEnabled =
+    storeConfig.features?.customerAccountsEnabled ?? true;
 
   return (
     <html
@@ -141,7 +143,7 @@ export default async function RootLayout({
       )}
       <body className="bg-warm-white">
         <StickyNavbar campaigns={campaigns} logoUrl={logoUrl}>
-          <Navbar campaigns={campaigns} logoUrl={logoUrl} navPages={navPages} />
+          <Navbar campaigns={campaigns} logoUrl={logoUrl} navPages={navPages} customerAccountsEnabled={customerAccountsEnabled} />
         </StickyNavbar>
         <main className="min-h-[75vh] max-w-[3500px]">{children}</main>
         <Footer logoUrl={logoUrl} storeName={storeName} email={storeEmail} phone={storePhone} instagramUrl={instagramUrl} analytics={analytics} withdrawalEnabled={withdrawalEnabled} />

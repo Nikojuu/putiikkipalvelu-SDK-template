@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getStoreConfig } from "@/lib/storeConfig";
 
 interface VerificationResult {
   success?: boolean;
@@ -48,6 +49,12 @@ async function verifyEmail(token: string): Promise<VerificationResult> {
 
 const VerifyEmailPage = async ({ searchParams }: VerifyEmailPageProps) => {
   const { token } = await searchParams;
+
+  // Customer accounts disabled for this store → nothing to verify.
+  const storeConfig = await getStoreConfig();
+  if (!(storeConfig.features?.customerAccountsEnabled ?? true)) {
+    redirect("/");
+  }
 
   // Redirect to home if no token provided
   if (!token) {

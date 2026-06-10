@@ -6,8 +6,12 @@ import CustomerDropdown from "./CustomerDropdown";
 import { getUser } from "@/lib/actions/authActions";
 import { getCategories } from "@/lib/categories";
 
-const Navbar = async ({ campaigns, logoUrl, navPages }: { campaigns: Campaign[]; logoUrl: string; navPages: NavPage[] }) => {
-  const [categories, { user }] = await Promise.all([getCategories(), getUser()]);
+const Navbar = async ({ campaigns, logoUrl, navPages, customerAccountsEnabled = true }: { campaigns: Campaign[]; logoUrl: string; navPages: NavPage[]; customerAccountsEnabled?: boolean }) => {
+  const [categories, { user }] = await Promise.all([
+    getCategories(),
+    // Skip the customer lookup entirely when accounts are disabled.
+    customerAccountsEnabled ? getUser() : Promise.resolve({ user: null }),
+  ]);
 
   return (
     <>
@@ -21,7 +25,7 @@ const Navbar = async ({ campaigns, logoUrl, navPages }: { campaigns: Campaign[];
 
       {/* User dropdown and Cart - positioned on the right */}
       <div className="flex items-center gap-4 ml-auto">
-        <CustomerDropdown user={user} />
+        {customerAccountsEnabled && <CustomerDropdown user={user} />}
         <Cart campaigns={campaigns} />
       </div>
     </>
