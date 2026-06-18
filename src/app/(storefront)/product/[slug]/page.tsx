@@ -3,8 +3,11 @@ import ProductDetail from "@/components/Product/ProductDetail";
 import { Metadata, ResolvingMetadata } from "next";
 import ProductSchema from "@/components/StructuredData/ProductSchema";
 import BreadcrumbSchema from "@/components/StructuredData/BreadcrumbSchema";
+import ReviewList from "@/components/Product/ReviewList";
+import ReviewFormDialog from "@/components/Product/ReviewFormDialog";
 import { getStoreConfig, getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
 import { storefront } from "@/lib/storefront";
+import { getUser } from "@/lib/actions/authActions";
 import { NotFoundError } from "@putiikkipalvelu/storefront-sdk";
 
 const getProductDataFromApi = async (slug: string) => {
@@ -73,14 +76,20 @@ const ProductIdRoute = async ({
 }) => {
   const { slug } = await params;
 
-  // Fetch product and store config in parallel
-  const [product, config] = await Promise.all([
+  // Fetch product, store config, and login state in parallel. getUser validates
+  // the session server-side (a stale/expired session-id cookie must read as
+  // logged-OUT so the form shows the name field), so a cheap cookie-presence
+  // check is NOT sufficient here.
+  const [product, config, userRes] = await Promise.all([
     getProductDataFromApi(slug),
     getStoreConfig(),
+    getUser(),
   ]);
 
   const storeName = config.store.name;
   const storeDomain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);
+  const isLoggedIn = !!userRes.user;
+  const reviewsEnabled = config.features?.reviewsEnabled ?? false;
 
   // Build breadcrumb items
   const breadcrumbItems = [
@@ -109,11 +118,21 @@ const ProductIdRoute = async ({
         product={product}
         storeName={storeName}
         storeDomain={storeDomain}
+        showAggregateRating={reviewsEnabled}
       />
       <BreadcrumbSchema items={breadcrumbItems} />
       <section className="mt-24 md:mt-48 container mx-auto px-4">
         <ProductDetail product={product} imageAspectRatio={config.store.imageAspectRatio} customerAccountsEnabled={config.features?.customerAccountsEnabled ?? true} />
       </section>
+      {reviewsEnabled && (
+        <section className="container mx-auto px-4 mt-16 mb-24">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <h2 className="text-2xl font-semibold">Arvostelut</h2>
+            <ReviewFormDialog slug={slug} isLoggedIn={isLoggedIn} />
+          </div>
+          <ReviewList slug={slug} />
+        </section>
+      )}
     </>
   );
 };

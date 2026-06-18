@@ -9,9 +9,16 @@ interface ProductSchemaProps {
   product: ProductDetail;
   storeName: string;
   storeDomain: string;
+  /** Emit aggregateRating only when reviews are enabled for the store. */
+  showAggregateRating?: boolean;
 }
 
-export default function ProductSchema({ product, storeName, storeDomain }: ProductSchemaProps) {
+export default function ProductSchema({
+  product,
+  storeName,
+  storeDomain,
+  showAggregateRating = false,
+}: ProductSchemaProps) {
   const firstVariation = product.variations?.[0];
 
   // Determine prices (variation takes priority)
@@ -71,6 +78,23 @@ export default function ProductSchema({ product, storeName, storeDomain }: Produ
     category: product.categories?.[0]?.name || "Products",
     sku: sku,
   };
+
+  // AggregateRating only when approved reviews exist — emitting it with zero
+  // reviews is invalid and triggers Search Console errors. Kept strictly on the
+  // Product (never the sibling Organization/LocalBusiness schemas) per Google's
+  // self-serving-review rule. No individual review text is emitted, so there is
+  // no user-content injection surface in the JSON-LD.
+  if (
+    showAggregateRating &&
+    product.reviewCount > 0 &&
+    product.averageRating !== null
+  ) {
+    schema.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: Math.round(product.averageRating * 10) / 10,
+      reviewCount: product.reviewCount,
+    };
+  }
 
   return (
     <script

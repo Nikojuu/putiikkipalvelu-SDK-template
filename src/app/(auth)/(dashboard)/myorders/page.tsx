@@ -16,6 +16,7 @@ import {
   Undo2,
 } from "lucide-react";
 import Link from "next/link";
+import ReviewFormDialog from "@/components/Product/ReviewFormDialog";
 
 // Define the order status enum
 enum OrderStatus {
@@ -146,13 +147,20 @@ const getStatusInfo = (status: OrderStatus) => {
 const OrderCard = ({
   order,
   withdrawalEnabled,
+  reviewsEnabled,
 }: {
   order: Order;
   withdrawalEnabled: boolean;
+  reviewsEnabled: boolean;
 }) => {
   const statusInfo = getStatusInfo(order.status);
   const orderDate = new Date(order.createdAt).toLocaleDateString("fi-FI");
   const totalAmountEur = (order.totalAmount / 100).toFixed(2);
+  // Only paid/fulfilled orders count as a verified purchase to review against
+  // (mirrors the backend's REVIEW_ELIGIBLE_STATUSES — excludes PENDING/REFUNDED).
+  const orderReviewable = (
+    ["PAID", "SHIPPED", "COMPLETED", "PARTIALLY_REFUNDED"] as string[]
+  ).includes(order.status as string);
 
   return (
     <div className="group relative bg-warm-white p-6 mb-6 transition-all duration-300 hover:shadow-md">
@@ -246,6 +254,22 @@ const OrderCard = ({
                       <p className="text-xs font-secondary text-charcoal/60">
                         Määrä: {item.quantity}
                       </p>
+                      {reviewsEnabled &&
+                        orderReviewable &&
+                        (item.itemType === "PRODUCT" ||
+                          item.itemType === "VARIATION") &&
+                        item.product.slug &&
+                        !item.product.unavailable && (
+                          <div className="mt-2">
+                            <ReviewFormDialog
+                              slug={item.product.slug}
+                              isLoggedIn
+                              showReward
+                              triggerLabel="Arvostele"
+                              triggerSize="sm"
+                            />
+                          </div>
+                        )}
                     </div>
                   </div>
 
@@ -334,6 +358,7 @@ const MyOrdersPage = async () => {
   ]);
   const withdrawalEnabled =
     storeConfig.features?.withdrawalEnabled ?? true;
+  const reviewsEnabled = storeConfig.features?.reviewsEnabled ?? false;
 
   // Filter out cancelled and failed orders
   const filteredOrders =
@@ -401,6 +426,7 @@ const MyOrdersPage = async () => {
                 key={order.id}
                 order={order}
                 withdrawalEnabled={withdrawalEnabled}
+                reviewsEnabled={reviewsEnabled}
               />
             ))}
         </div>
