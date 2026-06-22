@@ -2,20 +2,41 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import type { ProductSortOption } from "@putiikkipalvelu/storefront-sdk";
 
 type SortOption = {
   label: string;
   value: string;
 };
 
-export function SortOptions() {
+export function SortOptions({
+  storeDefaultSort = "newest",
+  isAllProducts = false,
+}: {
+  storeDefaultSort?: ProductSortOption;
+  isAllProducts?: boolean;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hasSearchQuery = !!searchParams.get("q");
-  const currentSort = searchParams.get("sort") || (hasSearchQuery ? "relevance" : "newest");
+
+  // Mirror the page's default-sort logic so the highlighted pill matches what's
+  // actually shown: search → relevance, otherwise the store default ("featured"
+  // only within a category, falling back to newest on all-products).
+  const effectiveDefault: ProductSortOption = hasSearchQuery
+    ? "relevance"
+    : storeDefaultSort === "featured" && isAllProducts
+      ? "newest"
+      : storeDefaultSort;
+  const currentSort = searchParams.get("sort") || effectiveDefault;
 
   const sortOptions: SortOption[] = [
     ...(hasSearchQuery ? [{ label: "Osuvuus", value: "relevance" }] : []),
+    // "Valikoidut" = the merchant's manual order; only meaningful within a
+    // category (not all-products, not search results).
+    ...(!isAllProducts && !hasSearchQuery
+      ? [{ label: "Valikoidut", value: "featured" }]
+      : []),
     { label: "Uusimmat", value: "newest" },
     { label: "Hinta: Alhaisin", value: "price_asc" },
     { label: "Hinta: Korkein", value: "price_desc" },

@@ -20,6 +20,7 @@ type ProductGridProps = {
   storeName: string;
   domain: string;
   imageAspectRatio: ImageAspectRatio;
+  storeDefaultSort: ProductSortOption;
 };
 
 export async function ProductGrid({
@@ -31,6 +32,7 @@ export async function ProductGrid({
   storeName,
   domain,
   imageAspectRatio,
+  storeDefaultSort,
 }: ProductGridProps) {
   const productPageData = await storefront.products.sorted({
     slugs,
@@ -75,7 +77,10 @@ export async function ProductGrid({
       />
 
       <div className="max-w-screen-xl mx-auto flex justify-end my-4">
-        <SortOptions />
+        <SortOptions
+          storeDefaultSort={storeDefaultSort}
+          isAllProducts={isAllProducts}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-screen-xl mx-auto my-8">

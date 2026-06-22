@@ -119,12 +119,23 @@ const ProductsPage = async ({
   const pageSize = 12;
   const currentPage = Number(resolvedSearchParams.page) || 1;
   const searchQuery = resolvedSearchParams.q?.trim() || "";
-  const sort = (resolvedSearchParams.sort as ProductSortOption) || (searchQuery ? "relevance" : "newest");
-
-  const domain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);
 
   const isAllProducts = slugs[0] === ALL_PRODUCTS_SLUG;
   const lastSlug = slugs[slugs.length - 1];
+
+  // Default sort: shopper's choice → the store's default → newest. "featured"
+  // (the merchant's manual order) only applies within a category, so the
+  // all-products view falls back to newest.
+  const storeDefault = config.store.defaultProductSort ?? "newest";
+  const sort =
+    (resolvedSearchParams.sort as ProductSortOption) ||
+    (searchQuery
+      ? "relevance"
+      : storeDefault === "featured" && isAllProducts
+        ? "newest"
+        : storeDefault);
+
+  const domain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);
 
   const matchedCategory =
     isAllProducts || !lastSlug
@@ -164,6 +175,7 @@ const ProductsPage = async ({
           storeName={config.store.name}
           domain={domain}
           imageAspectRatio={config.store.imageAspectRatio}
+          storeDefaultSort={storeDefault}
         />
       </Suspense>
     </section>
