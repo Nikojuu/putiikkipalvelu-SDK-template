@@ -4,6 +4,7 @@ import { storefront } from "@/lib/storefront";
 import type {
   CheckoutCustomerData,
   CheckoutShipmentMethod,
+  OrderStatus,
   PaytrailCheckoutResponse,
   TicketHolderData,
 } from "@putiikkipalvelu/storefront-sdk";
@@ -12,7 +13,11 @@ import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 
 export type PaytrailCheckoutResult =
-  | { success: true; data: PaytrailCheckoutResponse }
+  | { success: true; data: PaytrailCheckoutResponse; orderId: string }
+  | { success: false; error: string };
+
+export type ReleasePaytrailOrderResult =
+  | { success: true; released: boolean; status: OrderStatus | null }
   | { success: false; error: string };
 
 export async function apiCreatePaytrailCheckoutSession(
@@ -41,7 +46,34 @@ export async function apiCreatePaytrailCheckoutSession(
       }
     );
 
-    return { success: true, data };
+    return { success: true, data, orderId };
+  } catch (error) {
+    const message =
+      error instanceof StorefrontError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Tuntematon virhe";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Release an abandoned PENDING Paytrail order: cancel it and restore its
+ * reserved stock. Called when the customer idles past the payment-page
+ * timeout (before redirecting to the cart) and before creating a new
+ * checkout session to replace a previous attempt.
+ *
+ * If a payment callback already finalized the order, nothing changes and the
+ * current status is returned — check for PAID/SHIPPED and route to the
+ * success page instead of the cart.
+ */
+export async function apiReleasePaytrailOrder(
+  orderId: string
+): Promise<ReleasePaytrailOrderResult> {
+  try {
+    const { released, status } = await storefront.order.releasePending(orderId);
+    return { success: true, released, status };
   } catch (error) {
     const message =
       error instanceof StorefrontError

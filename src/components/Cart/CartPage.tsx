@@ -66,6 +66,24 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Arriving via the payment-page timeout redirect (?expired=1): the pending
+  // order was already cancelled and its reserved stock released — tell the
+  // customer and re-validate the cart against current availability.
+  // window.location instead of useSearchParams to avoid a Suspense boundary
+  // requirement; a redirect flag only matters on mount.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("expired") !== "1") return;
+
+    router.replace("/cart");
+    toast({
+      title: "Maksuistunto vanheni",
+      description:
+        "Varaamasi tuotteet vapautettiin ja ostoskorisi on ennallaan. Voit jatkaa tilausta uudelleen.",
+    });
+    cart.validateCart(campaigns);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Clear validation error when cart items change
   useEffect(() => {
     if (validationError) {

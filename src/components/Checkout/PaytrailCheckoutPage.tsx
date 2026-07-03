@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import CustomerDataForm from "@/components/Checkout/CustomerDataForm";
 import TicketHoldersForm from "@/components/Checkout/TicketHoldersForm";
@@ -22,11 +23,21 @@ import { XCircle } from "lucide-react";
 import { CheckoutSteps } from "@/components/Checkout/CheckoutSteps";
 import { getShippingOptions } from "@/lib/actions/shipmentActions";
 import { CheckoutButton } from "../Cart/CheckoutButton";
-import { apiCreatePaytrailCheckoutSession } from "@/lib/actions/paytrailActions";
+import {
+  apiCreatePaytrailCheckoutSession,
+  apiReleasePaytrailOrder,
+} from "@/lib/actions/paytrailActions";
 import PaymentSelection from "./PaytrailPaymentSelection";
 import { trackBeginCheckout } from "@/lib/gtm";
 
+// How long the customer may idle on the payment-method step before their
+// pending order is cancelled, its reserved stock released, and they are sent
+// back to the cart. The backend reconcile cron remains the backstop for
+// closed tabs, so this only needs to cover an open, idle tab.
+const PAYMENT_PAGE_TIMEOUT_MS = 30 * 60 * 1000;
+
 const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
+  const router = useRouter();
   const { toast } = useToast();
   const { items: cartItems, discount } = useCart();
   const { cartTotal } = calculateCartWithCampaigns(cartItems, campaigns);
@@ -61,9 +72,24 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     useState<ShipmentSelection | null>(null);
   const [paytrailData, setPaytrailData] =
     useState<PaytrailCheckoutResponse | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [ticketHolders, setTicketHolders] = useState<
     Record<string, TicketHolderData[]> | undefined
   >(undefined);
+  const timeoutFiredRef = useRef(false);
+
+  // A previous "Siirry maksamaan" click left a PENDING order holding reserved
+  // stock — release it before creating a replacement session so the stock
+  // isn't reserved twice.
+  const releasePreviousOrder = async () => {
+    if (!orderId) return;
+    setOrderId(null);
+    try {
+      await apiReleasePaytrailOrder(orderId);
+    } catch {
+      // Best effort — the reconcile cron releases it eventually.
+    }
+  };
 
   // Build steps dynamically
   const buildSteps = () => {
@@ -88,6 +114,60 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     : -1;
   const paymentStep = steps[steps.length - 1].number;
 
+  // Payment-page timeout. Timestamp-based (not a bare setTimeout): background
+  // tabs throttle timers, so an overdue timeout must also fire when the tab
+  // regains visibility/focus. Clicking a bank button navigates this tab away
+  // and unmounts the component, so the timer can never fire mid-bank-flow.
+  //
+  // IMPORTANT: never release on unmount/beforeunload — unloading also happens
+  // when the customer navigates TO the bank, and releasing there would cancel
+  // every real payment attempt.
+  useEffect(() => {
+    if (step !== paymentStep || !paytrailData || !orderId) return;
+
+    timeoutFiredRef.current = false;
+    const startedAt = Date.now();
+
+    const expire = async () => {
+      if (timeoutFiredRef.current) return;
+      timeoutFiredRef.current = true;
+
+      // Release BEFORE redirecting: the customer's own reservation would
+      // otherwise count against them in cart validation.
+      const result = await apiReleasePaytrailOrder(orderId).catch(() => null);
+
+      // The payment won the race — the order is already paid, don't send the
+      // customer back to the cart.
+      if (
+        result?.success &&
+        !result.released &&
+        (result.status === "PAID" || result.status === "SHIPPED")
+      ) {
+        router.push(`/payment/success/${orderId}`);
+        return;
+      }
+
+      // Released (or release failed — the cron backstop covers it): move the
+      // customer off the now-dead payment page.
+      router.push("/cart?expired=1");
+    };
+
+    const check = () => {
+      if (Date.now() - startedAt >= PAYMENT_PAGE_TIMEOUT_MS) {
+        void expire();
+      }
+    };
+
+    const interval = setInterval(check, 30_000);
+    document.addEventListener("visibilitychange", check);
+    window.addEventListener("focus", check);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", check);
+      window.removeEventListener("focus", check);
+    };
+  }, [step, paymentStep, paytrailData, orderId, router]);
+
   const handleCustomerDataSubmit = async (data: CustomerData) => {
     setIsLoading(true);
     setCustomerData(data);
@@ -104,10 +184,12 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
     // Skip shipping for ticket-only carts — create Paytrail session directly
     if (!requiresShipping) {
+      await releasePreviousOrder();
       const result = await apiCreatePaytrailCheckoutSession(null, data);
 
       if (result.success) {
         setPaytrailData(result.data);
+        setOrderId(result.orderId);
         setStep(paymentStep);
       } else {
         console.error("Checkout failed:", result.error);
@@ -171,6 +253,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
         return;
       }
 
+      await releasePreviousOrder();
       const result = await apiCreatePaytrailCheckoutSession(
         null,
         validatedCustomerData.data,
@@ -179,6 +262,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
       if (result.success) {
         setPaytrailData(result.data);
+        setOrderId(result.orderId);
         setStep(paymentStep);
       } else {
         console.error("Checkout failed:", result.error);
@@ -238,6 +322,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
         }
       : null;
 
+    await releasePreviousOrder();
     const result = await apiCreatePaytrailCheckoutSession(
       chosenShipmentMethod,
       validatedCustomerData,
@@ -246,6 +331,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
     if (result.success) {
       setPaytrailData(result.data);
+      setOrderId(result.orderId);
       setStep(paymentStep);
     } else {
       console.error("Checkout failed:", result.error);
