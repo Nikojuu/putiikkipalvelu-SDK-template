@@ -9,15 +9,16 @@ const PaytrailCheckoutPage = dynamic(
 );
 import { storefront } from "@/lib/storefront";
 
+// Functional route: noindex (see cart/page.tsx) — description stays generic.
 export const metadata: Metadata = {
-  title: "Pupun Korvat | Tilaus",
-  description: "Tilaa käsintehtyjä koruja Pupun Korvista.",
+  title: "Tilaus",
+  description: "Viimeistele tilauksesi ja valitse maksutapa.",
   robots: {
     index: false,
     follow: false,
   },
   openGraph: {
-    title: "Pupun Korvat |  Tilaus",
+    title: "Tilaus",
     type: "website",
   },
 };

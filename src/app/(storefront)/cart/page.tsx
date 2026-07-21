@@ -2,10 +2,12 @@ import CartPage from "@/components/Cart/CartPage";
 import { Metadata } from "next";
 import { getStoreConfig } from "@/lib/storeConfig";
 
+// Functional route: noindex, so this description is never shown in a search
+// snippet. Kept generic and store-agnostic on purpose — reading it from store
+// settings would add an API round-trip to render text nobody sees.
 export const metadata: Metadata = {
-  title: "Pupun Korvat | Ostoskori",
-  description:
-    "Tutustu Pupun Korvien käsintehtyihin koruihin ja löydä ainutlaatuinen lahja tai itsellesi sopiva koru.",
+  title: "Ostoskori",
+  description: "Ostoskorisi sisältö ja tilauksen yhteenveto.",
   robots: "noindex, nofollow",
 };
 

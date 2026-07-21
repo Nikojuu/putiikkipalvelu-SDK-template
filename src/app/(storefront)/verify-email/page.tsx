@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getStoreConfig } from "@/lib/storeConfig";
+
+// Reached only from a tokenised link in a verification email — never a search
+// result. The layout supplies the store name, so the title stays brand-free.
+export const metadata: Metadata = {
+  title: "Sähköpostin vahvistus",
+  robots: { index: false, follow: false },
+};
 
 interface VerificationResult {
   success?: boolean;

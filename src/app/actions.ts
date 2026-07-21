@@ -33,6 +33,9 @@ export async function submitContactForm(formData: FormData) {
     const { error } = await resend.emails.send({
       from: "Putiikkipalvelu <info@putiikkipalvelu.fi>",
       to: [storeConfig.store.email],
+      // Without this, hitting Reply in the merchant's inbox answers the
+      // platform sender instead of the customer who wrote in.
+      replyTo: email,
       subject: "Sinulle on uusi yhteydenottopyyntö",
       react: ContactFormEmail({ firstName, lastName, email, message }) as React.ReactElement,
     });

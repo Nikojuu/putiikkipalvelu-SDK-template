@@ -30,7 +30,20 @@ export default function robots(): MetadataRoute.Robots {
           "/api/*",
           "/_next/*",
           "/static/*",
-          "/(auth)/*", // Block admin/auth routes
+          // Customer-account and transactional routes. These must be listed as
+          // real URL paths — "/(auth)/*" never matched anything, because a
+          // Next.js route group is not part of the URL.
+          "/login",
+          "/register",
+          "/forgot-password",
+          "/reset-password",
+          "/mypage",
+          "/myinfo",
+          "/myorders",
+          "/mywishlist",
+          "/verify-email",
+          "/orders/*",
+          "/scanner",
         ],
       },
     ],

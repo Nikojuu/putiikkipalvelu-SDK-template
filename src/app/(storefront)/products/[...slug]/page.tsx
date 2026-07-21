@@ -58,7 +58,7 @@ export async function generateMetadata({
     const twitterImage = getSEOValue(config.seo.twitterImageUrl, SEO_FALLBACKS.twitterImage);
     const twitterHandle = config.seo.twitterHandle;
 
-    const title = metaTitle || `${config.store.name} | ${categoryName}`;
+    const title = metaTitle || categoryName;
     const description = metaDescription || `Tutustu ${config.store.name} verkkokaupan tuotteisiin kategoriassa ${categoryName}.`;
 
     return {

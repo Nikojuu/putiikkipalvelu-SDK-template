@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const config = await getStoreConfig();
 
-    const title = `${config.store.name} | Peruutusilmoitus`;
+    const title = "Peruutusilmoitus";
     const description =
       "Tee lakisääteinen peruutusilmoitus tilauksestasi.";
     const domain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);

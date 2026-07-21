@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const config = await getStoreConfig();
 
-    const title = `${config.store.name} | Ota yhteyttä`;
+    const title = "Ota yhteyttä";
     const description = `Ota yhteyttä ${config.store.name} ja kysy lisää tuotteista tai tilauksesta.`;
     const domain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);
     const ogImage = getSEOValue(config.seo.openGraphImageUrl, SEO_FALLBACKS.openGraphImage);

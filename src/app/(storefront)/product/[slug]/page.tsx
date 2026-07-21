@@ -44,13 +44,13 @@ export async function generateMetadata(
   const productUrl = `${storeDomain}/product/${slug}`;
 
   return {
-    title: `${storeName} | ${product.metaTitle || product.name}`,
+    title: product.metaTitle || product.name,
     description: product.metaDescription || product.description,
     alternates: {
       canonical: productUrl,
     },
     openGraph: {
-      title: `${storeName} | ${product.metaTitle || product.name}`,
+      title: product.metaTitle || product.name,
       description: product.metaDescription || product.description,
       url: productUrl,
       siteName: storeName,
@@ -62,7 +62,7 @@ export async function generateMetadata(
     },
     twitter: {
       card: "summary_large_image",
-      title: `${storeName} | ${product.metaTitle || product.name}`,
+      title: product.metaTitle || product.name,
       description: product.metaDescription || product.description,
       images: product.images ? [product.images[0]] : [],
     },

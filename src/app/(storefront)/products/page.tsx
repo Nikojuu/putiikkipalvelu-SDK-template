@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const config = await getStoreConfig();
 
-    const title = `${config.store.name} | Kaikki tuotteet`;
+    const title = "Kaikki tuotteet";
     const description = getSEOValue(
       config.seo.seoDescription,
       `Tutustu ${config.store.name} verkkokaupan tuotteisiin. ${SEO_FALLBACKS.description}`

@@ -11,14 +11,14 @@ import type { Order } from "@putiikkipalvelu/storefront-sdk";
 import { PurchaseTracker } from "@/components/Checkout/PurchaseTracker";
 
 export const metadata: Metadata = {
-  title: "Pupun Korvat | Kiitos tilauksestasi!",
+  title: "Kiitos tilauksestasi!",
   description: "Kiitos tilauksestasi! Tässä yhteenveto ostoksestasi.",
   robots: {
     index: false,
     follow: false,
   },
   openGraph: {
-    title: "Pupun Korvat | Kiitos tilauksestasi!",
+    title: "Kiitos tilauksestasi!",
     type: "website",
   },
 };
