@@ -8,10 +8,12 @@ export async function generateMetadata(): Promise<Metadata> {
     const config = await getStoreConfig();
 
     const title = "Kaikki tuotteet";
-    const description = getSEOValue(
-      config.seo.seoDescription,
-      `Tutustu ${config.store.name} verkkokaupan tuotteisiin. ${SEO_FALLBACKS.description}`
-    );
+    // Derived per store rather than read from StoreSeo.seoDescription: the
+    // homepage already uses that value (layout.tsx), so reading it here shipped
+    // an identical meta description on / and /products. Note the hyphen in
+    // "-verkkokaupan" — Finnish attaches the case ending to the common noun, so
+    // this stays grammatical for any store name.
+    const description = `Selaa ${config.store.name} -verkkokaupan koko tuotevalikoimaa. Löydä uutuudet ja suosikit helposti.`;
     const domain = getSEOValue(config.seo.domain, SEO_FALLBACKS.domain);
     const ogImage = getSEOValue(config.seo.openGraphImageUrl, SEO_FALLBACKS.openGraphImage);
     const twitterImage = getSEOValue(config.seo.twitterImageUrl, SEO_FALLBACKS.twitterImage);
