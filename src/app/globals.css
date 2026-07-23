@@ -218,6 +218,29 @@ h1 {
     100% { background-position: -200% 0; }
   }
 
+  /* Fade-in-up entrance for product cards (replaces Framer Motion —
+     JS-driven whileInView kept the main thread busy during scrolling) */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up {
+      animation: none;
+    }
+  }
+
   /* Elegant card hover effect */
   .card-lift {
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);

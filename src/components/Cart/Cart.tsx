@@ -4,7 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/hooks/use-cart";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import {
   Sheet,
@@ -33,6 +33,17 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const initializedRef = useRef<boolean>(false);
 
+  // Controlled sheet so opening can happen in a transition — mounting the
+  // full cart content synchronously in the tap handler blocks the frame
+  const [isOpen, setIsOpen] = useState(false);
+  const [, startTransition] = useTransition();
+
+  const handleOpenChange = useCallback((open: boolean) => {
+    startTransition(() => {
+      setIsOpen(open);
+    });
+  }, []);
+
   // Calculate cart with campaigns applied
   const { calculatedItems, cartTotal, originalTotal, totalSavings } =
     calculateCartWithCampaigns(items, campaigns);
@@ -58,7 +69,7 @@ const Cart = ({ campaigns }: { campaigns: Campaign[] }) => {
   }
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger
         className="group flex items-center gap-2 p-2 transition-colors duration-300"
         aria-label={

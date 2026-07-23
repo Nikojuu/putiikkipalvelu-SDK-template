@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Share2 } from "lucide-react";
 
 import { getPriceInfo } from "@/lib/utils";
@@ -28,13 +27,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio
     : null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.6 }}
-      className="group h-full"
-    >
+    <div className="group h-full animate-fade-in-up">
       <Link href={`/product/${item.slug}`} className="block h-full">
         <div className="relative h-full bg-warm-white overflow-hidden">
           {/* Card frame */}
@@ -164,7 +157,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio
           </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 };
 

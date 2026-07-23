@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useTransition } from "react";
 import Link from "next/link";
 import { Menu, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -132,6 +132,15 @@ const MobileLinks = memo(
     const [expandedCategory, setExpandedCategory] = useState<string | null>(
       null
     );
+    // Mounting the sheet (portal + category tree) is heavy on mobile; a
+    // transition lets the tap paint immediately instead of blocking the frame
+    const [, startTransition] = useTransition();
+
+    const handleOpenChange = useCallback((open: boolean) => {
+      startTransition(() => {
+        setIsMobileMenuOpen(open);
+      });
+    }, []);
 
     const handleLinkClick = useCallback(() => {
       setIsMobileMenuOpen(false);
@@ -143,7 +152,7 @@ const MobileLinks = memo(
 
     return (
       <div className="md:hidden">
-        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <Sheet open={isMobileMenuOpen} onOpenChange={handleOpenChange}>
           <SheetTrigger asChild className="md:hidden">
             <Button
               variant="ghost"
