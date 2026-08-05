@@ -9,7 +9,7 @@ const PaymentSelection = ({
   const { groups, providers } = paytrailData;
 
   if (!groups || !providers) {
-    return <div>Loading payment methods...</div>;
+    return <div>Ladataan maksutapoja...</div>;
   }
 
   return (

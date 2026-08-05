@@ -56,6 +56,36 @@ export default async function PaymentSuccessPage({
     );
   }
 
+  // A PENDING order can land here: an eCheck-funded PayPal capture that clears
+  // over days, or a redirect that raced the payment webhook. Show a "payment
+  // being confirmed" panel instead of a receipt — and never fire the GA
+  // purchase event for money that may still fail.
+  if (order.status === "PENDING") {
+    return (
+      <section className="pt-8 md:pt-16 pb-16 bg-warm-white min-h-screen">
+        <div className="container mx-auto px-4 max-w-screen-xl">
+          <div className="relative bg-cream/30 border border-rose-gold/10 p-8 md:p-12 text-center max-w-2xl mx-auto mt-16">
+            <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-rose-gold/30" />
+            <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-rose-gold/30" />
+            <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-rose-gold/30" />
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-rose-gold/30" />
+
+            <h1 className="font-primary text-2xl md:text-3xl font-semibold text-charcoal">
+              Maksua vahvistetaan
+            </h1>
+            <p className="mt-4 text-charcoal/70">
+              Saat tilausvahvistuksen sähköpostitse heti kun maksu on
+              käsitelty.
+            </p>
+            <Button asChild className="mt-8">
+              <Link href="/">Kotisivulle</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const formatPrice = (price: number) => {
     if (price === 0) {
       return <span className="text-green-600 font-semibold">Ilmainen</span>;

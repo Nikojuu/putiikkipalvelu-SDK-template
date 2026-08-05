@@ -24,6 +24,7 @@ export default async function LocalBusinessSchema() {
       .map((method) => {
         if (method === "stripe") return "Credit Card, Debit Card";
         if (method === "paytrail") return "Paytrail";
+        if (method === "paypal") return "PayPal";
         return method;
       })
       .join(", ");

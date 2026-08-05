@@ -28,6 +28,7 @@ import {
   apiReleasePaytrailOrder,
 } from "@/lib/actions/paytrailActions";
 import PaymentSelection from "./PaytrailPaymentSelection";
+import { PayPalPayButton } from "./PayPalPayButton";
 import { trackBeginCheckout } from "@/lib/gtm";
 
 // How long the customer may idle on the payment-method step before their
@@ -36,7 +37,13 @@ import { trackBeginCheckout } from "@/lib/gtm";
 // closed tabs, so this only needs to cover an open, idle tab.
 const PAYMENT_PAGE_TIMEOUT_MS = 30 * 60 * 1000;
 
-const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
+const PaytrailCheckoutPage = ({
+  campaigns,
+  showPaypal = false,
+}: {
+  campaigns: Campaign[];
+  showPaypal?: boolean;
+}) => {
   const router = useRouter();
   const { toast } = useToast();
   const { items: cartItems, discount } = useCart();
@@ -301,6 +308,16 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     setIsLoading(false);
   };
 
+  // Map the selected shipping to the checkout API shape
+  const chosenShipmentMethodForApi = () =>
+    selectedShipping
+      ? {
+          shipmentMethodId: selectedShipping.shipmentMethodId,
+          pickupId: selectedShipping.pickupPointId,
+          serviceId: selectedShipping.serviceId,
+        }
+      : null;
+
   const handlePaytrailCheckout = async () => {
     const validationResult = customerDataSchema.safeParse(customerData);
     if (!validationResult.success) {
@@ -313,14 +330,7 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
     trackBeginCheckout(cartItems, cartTotalAfterDiscount, discount?.code);
 
-    // Convert to the format expected by the checkout API
-    const chosenShipmentMethod = selectedShipping
-      ? {
-          shipmentMethodId: selectedShipping.shipmentMethodId,
-          pickupId: selectedShipping.pickupPointId,
-          serviceId: selectedShipping.serviceId,
-        }
-      : null;
+    const chosenShipmentMethod = chosenShipmentMethodForApi();
 
     await releasePreviousOrder();
     const result = await apiCreatePaytrailCheckoutSession(
@@ -422,9 +432,37 @@ const PaytrailCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
         )}
 
         {step === paymentStep && paytrailData && (
-          <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
-            <PaymentSelection paytrailData={paytrailData} />
-          </div>
+          <>
+            <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
+              <PaymentSelection paytrailData={paytrailData} />
+            </div>
+
+            {/* PayPal below the Paytrail provider grid, equal-weight option.
+                Its click releases the already-created Paytrail pending order
+                first, so stock is never reserved twice. */}
+            {showPaypal && (
+              <div className="mt-10 mx-auto max-w-2xl flex flex-col items-center gap-4">
+                <div className="flex items-center gap-4 w-full max-w-xs">
+                  <div className="flex-1 h-[1px] bg-charcoal/20" />
+                  <span className="text-sm text-charcoal/60 font-secondary uppercase tracking-wider">
+                    tai
+                  </span>
+                  <div className="flex-1 h-[1px] bg-charcoal/20" />
+                </div>
+                <PayPalPayButton
+                  customerData={customerData}
+                  shipment={chosenShipmentMethodForApi()}
+                  ticketHolders={ticketHolders}
+                  disabled={isLoading}
+                  onLoadingChange={setIsLoading}
+                  onBeforeCheckout={releasePreviousOrder}
+                  cartItems={cartItems}
+                  cartTotal={cartTotalAfterDiscount}
+                  discountCode={discount?.code}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
