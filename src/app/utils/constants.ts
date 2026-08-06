@@ -1,4 +1,4 @@
-export type PaymentMethod = "stripe" | "paytrail"; // Add more methods as needed
+export type PaymentMethod = "stripe" | "paytrail" | "paypal"; // Add more methods as needed
 
 // ============================================
 // TEMPLATE CONFIGURATION

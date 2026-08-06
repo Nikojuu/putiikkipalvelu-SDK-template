@@ -56,6 +56,67 @@ export default async function PaymentSuccessPage({
     );
   }
 
+  // A cancelled/failed order can land here too (e.g. a cancel leg whose
+  // redirect fell back to the success-page shape). NEVER render a receipt or
+  // fire the GA purchase event for money that never moved.
+  if (order.status === "FAILED" || order.status === "CANCELLED") {
+    return (
+      <section className="pt-8 md:pt-16 pb-16 bg-warm-white min-h-screen">
+        <div className="container mx-auto px-4 max-w-screen-xl">
+          <div className="relative bg-cream/30 border border-rose-gold/10 p-8 md:p-12 text-center max-w-2xl mx-auto mt-16">
+            <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-rose-gold/30" />
+            <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-rose-gold/30" />
+            <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-rose-gold/30" />
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-rose-gold/30" />
+
+            <h1 className="font-primary text-2xl md:text-3xl font-semibold text-burnt-orange">
+              Maksu peruuntui
+            </h1>
+            <p className="mt-4 text-charcoal/70">
+              Tilausta ei ole veloitettu. Voit yrittää tilaamista uudelleen —
+              jos sinulla on kysyttävää, ota yhteyttä asiakaspalveluumme.
+            </p>
+            <Button asChild className="mt-8">
+              <Link href="/">Kotisivulle</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // A PENDING PayPal order can land here: an eCheck-funded capture that clears
+  // over days. Show a "payment being confirmed" panel instead of a receipt —
+  // and never fire the GA purchase event for money that may still fail.
+  // PayPal ONLY: a Stripe redirect routinely outruns its webhook by a moment,
+  // and hiding the receipt + dropping the purchase event for those orders
+  // would silently under-report ad attribution (pre-PayPal behavior kept).
+  if (order.status === "PENDING" && order.paymentProvider === "PAYPAL") {
+    return (
+      <section className="pt-8 md:pt-16 pb-16 bg-warm-white min-h-screen">
+        <div className="container mx-auto px-4 max-w-screen-xl">
+          <div className="relative bg-cream/30 border border-rose-gold/10 p-8 md:p-12 text-center max-w-2xl mx-auto mt-16">
+            <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-rose-gold/30" />
+            <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-rose-gold/30" />
+            <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-rose-gold/30" />
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-rose-gold/30" />
+
+            <h1 className="font-primary text-2xl md:text-3xl font-semibold text-charcoal">
+              Maksua vahvistetaan
+            </h1>
+            <p className="mt-4 text-charcoal/70">
+              Saat tilausvahvistuksen sähköpostitse heti kun maksu on
+              käsitelty.
+            </p>
+            <Button asChild className="mt-8">
+              <Link href="/">Kotisivulle</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const formatPrice = (price: number) => {
     if (price === 0) {
       return <span className="text-green-600 font-semibold">Ilmainen</span>;

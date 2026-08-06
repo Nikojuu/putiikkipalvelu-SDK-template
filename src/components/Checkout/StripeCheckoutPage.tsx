@@ -24,9 +24,16 @@ import { getShippingOptions } from "@/lib/actions/shipmentActions";
 
 import { useRouter } from "next/navigation";
 import { apiCreateStripeCheckoutSession } from "@/lib/actions/stripeActions";
+import { PayPalPayButton } from "./PayPalPayButton";
 import { trackBeginCheckout } from "@/lib/gtm";
 
-const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
+const StripeCheckoutPage = ({
+  campaigns,
+  showPaypal = false,
+}: {
+  campaigns: Campaign[];
+  showPaypal?: boolean;
+}) => {
   const { toast } = useToast();
   const { items: cartItems, discount } = useCart();
   const { cartTotal } = calculateCartWithCampaigns(cartItems, campaigns);
@@ -76,6 +83,11 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     if (requiresShipping) {
       s.push({ number: s.length + 1, title: "Toimitustapa" });
     }
+    // Non-shippable carts normally go straight to Stripe; with PayPal
+    // available the buyer needs a place to choose, so add a payment step
+    if (!requiresShipping && showPaypal) {
+      s.push({ number: s.length + 1, title: "Maksutapa" });
+    }
     return s;
   };
   const steps = buildSteps();
@@ -85,6 +97,8 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
   const shippingStep = requiresShipping
     ? (requiresHolders ? 3 : 2)
     : -1;
+  const paymentChoiceStep =
+    !requiresShipping && showPaypal ? steps[steps.length - 1].number : -1;
 
   const handleCustomerDataSubmit = async (data: CustomerData) => {
     setIsLoading(true);
@@ -102,6 +116,13 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
     // If no shipping needed and no holders, go straight to Stripe
     if (!requiresShipping) {
+      // With PayPal available the buyer chooses the provider first
+      if (showPaypal) {
+        setStep(paymentChoiceStep);
+        setIsLoading(false);
+        return;
+      }
+
       const result = await apiCreateStripeCheckoutSession(null, data);
 
       if (result.success) {
@@ -159,6 +180,12 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
     if (!requiresShipping) {
       const validatedCustomerData = customerDataSchema.safeParse(customerData);
       if (!validatedCustomerData.success) {
+        setIsLoading(false);
+        return;
+      }
+
+      if (showPaypal) {
+        setStep(paymentChoiceStep);
         setIsLoading(false);
         return;
       }
@@ -346,7 +373,73 @@ const StripeCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
               )}
             </button>
           </div>
+          {showPaypal && (
+            <div className="mt-8 mx-auto max-w-2xl flex flex-col items-center gap-4">
+              <div className="flex items-center gap-4 w-full max-w-xs">
+                <div className="flex-1 h-[1px] bg-charcoal/20" />
+                <span className="text-sm text-charcoal/60 font-secondary uppercase tracking-wider">
+                  tai
+                </span>
+                <div className="flex-1 h-[1px] bg-charcoal/20" />
+              </div>
+              <PayPalPayButton
+                customerData={customerData}
+                shipment={
+                  selectedShipping
+                    ? {
+                        shipmentMethodId: selectedShipping.shipmentMethodId,
+                        pickupId: selectedShipping.pickupPointId,
+                        serviceId: selectedShipping.serviceId,
+                      }
+                    : null
+                }
+                ticketHolders={ticketHolders}
+                disabled={!selectedShipping || isLoading}
+                onLoadingChange={setIsLoading}
+                cartItems={cartItems}
+                cartTotal={cartTotalAfterDiscount}
+                discountCode={discount?.code}
+              />
+            </div>
+          )}
         </>
+      )}
+
+      {step === paymentChoiceStep && paymentChoiceStep !== -1 && (
+        <div className="mt-12 mx-auto max-w-2xl flex flex-col items-center gap-6">
+          <button
+            type="button"
+            onClick={handleStripeCheckout}
+            disabled={isLoading}
+            className="group inline-flex items-center gap-3 px-8 py-4 bg-charcoal text-warm-white font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:bg-rose-gold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Odota</span>
+              </>
+            ) : (
+              <span>Siirry maksamaan</span>
+            )}
+          </button>
+          <div className="flex items-center gap-4 w-full max-w-xs">
+            <div className="flex-1 h-[1px] bg-charcoal/20" />
+            <span className="text-sm text-charcoal/60 font-secondary uppercase tracking-wider">
+              tai
+            </span>
+            <div className="flex-1 h-[1px] bg-charcoal/20" />
+          </div>
+          <PayPalPayButton
+            customerData={customerData}
+            shipment={null}
+            ticketHolders={ticketHolders}
+            disabled={isLoading}
+            onLoadingChange={setIsLoading}
+            cartItems={cartItems}
+            cartTotal={cartTotalAfterDiscount}
+            discountCode={discount?.code}
+          />
+        </div>
       )}
 
     </div>
