@@ -24,6 +24,7 @@ export function PayPalPayButton({
   disabled = false,
   onLoadingChange,
   onBeforeCheckout,
+  onCheckoutFailed,
   cartItems,
   cartTotal,
   discountCode,
@@ -40,6 +41,12 @@ export function PayPalPayButton({
    * never reserved twice.
    */
   onBeforeCheckout?: () => Promise<void>;
+  /**
+   * The PayPal checkout failed AFTER onBeforeCheckout already ran — the
+   * parent must tear down any state that depended on the released order
+   * (e.g. the Paytrail bank grid, now backed by a cancelled order).
+   */
+  onCheckoutFailed?: () => void;
   cartItems: CartItem[];
   cartTotal: number;
   discountCode?: string;
@@ -81,6 +88,7 @@ export function PayPalPayButton({
       description: result.error || "Tuntematon virhe",
       className: "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
     });
+    onCheckoutFailed?.();
     setIsLoading(false);
     onLoadingChange?.(false);
   };

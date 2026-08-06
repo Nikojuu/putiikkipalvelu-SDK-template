@@ -98,6 +98,16 @@ const PaytrailCheckoutPage = ({
     }
   };
 
+  // PayPal checkout failed AFTER the Paytrail order was released: the bank
+  // grid on screen is backed by a CANCELLED order — paying it would go
+  // through the oversell re-take path. Tear the dead grid down and step back
+  // so the next attempt creates a fresh session.
+  const handlePaypalFailed = () => {
+    setPaytrailData(null);
+    setOrderId(null);
+    setStep(requiresShipping ? shippingStep : 1);
+  };
+
   // Build steps dynamically
   const buildSteps = () => {
     const s: { number: number; title: string }[] = [
@@ -434,7 +444,12 @@ const PaytrailCheckoutPage = ({
         {step === paymentStep && paytrailData && (
           <>
             <div className="mt-6 flex justify-start mx-auto max-w-screen-2xl">
-              <PaymentSelection paytrailData={paytrailData} />
+              {/* Frozen while a PayPal checkout is in flight: its click has
+                  already released the Paytrail order backing these forms */}
+              <PaymentSelection
+                paytrailData={paytrailData}
+                disabled={isLoading}
+              />
             </div>
 
             {/* PayPal below the Paytrail provider grid, equal-weight option.
@@ -456,6 +471,7 @@ const PaytrailCheckoutPage = ({
                   disabled={isLoading}
                   onLoadingChange={setIsLoading}
                   onBeforeCheckout={releasePreviousOrder}
+                  onCheckoutFailed={handlePaypalFailed}
                   cartItems={cartItems}
                   cartTotal={cartTotalAfterDiscount}
                   discountCode={discount?.code}

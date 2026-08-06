@@ -3,8 +3,15 @@ import Image from "next/image";
 
 const PaymentSelection = ({
   paytrailData,
+  disabled = false,
 }: {
   paytrailData: PaytrailCheckoutResponse;
+  /**
+   * While a PayPal checkout is in flight the backing Paytrail order has been
+   * released — these bank forms would pay for a cancelled order. Freeze the
+   * whole grid until the navigation resolves.
+   */
+  disabled?: boolean;
 }) => {
   const { groups, providers } = paytrailData;
 
@@ -13,7 +20,10 @@ const PaymentSelection = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full">
+    <div
+      className={`max-w-6xl mx-auto w-full ${disabled ? "pointer-events-none opacity-50" : ""}`}
+      aria-disabled={disabled}
+    >
       {/* Header with diamond decoration */}
       <div className="text-center mb-12">
         <div className="flex items-center justify-center gap-4 mb-4">
