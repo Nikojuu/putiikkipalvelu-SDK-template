@@ -67,9 +67,12 @@ const PayPalOnlyCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
       s.push({ number: s.length + 1, title: "Lipun haltijat" });
     }
     if (requiresShipping) {
-      s.push({ number: s.length + 1, title: "Toimitustapa" });
+      // Payment happens ON the shipping step (the PayPal button renders
+      // there) — a separate "Maksutapa" step would never be reached
+      s.push({ number: s.length + 1, title: "Toimitus ja maksu" });
+    } else {
+      s.push({ number: s.length + 1, title: "Maksutapa" });
     }
-    s.push({ number: s.length + 1, title: "Maksutapa" });
     return s;
   };
   const steps = buildSteps();
