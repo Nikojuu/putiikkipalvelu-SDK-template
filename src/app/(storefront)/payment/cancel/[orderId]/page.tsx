@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import { XCircle } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
-import { storefront } from "@/lib/storefront";
 
 export const metadata: Metadata = {
   title: "Tilaus peruutettu",
@@ -18,34 +17,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function CancelPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ orderId: string }>;
-  searchParams: Promise<{ release?: string }>;
-}) {
-  const { orderId } = await params;
-  const { release } = await searchParams;
-
-  // Release the cancelled order's reserved stock right away instead of
-  // waiting for the payment-page timeout or the reconcile cron. Claim-first
-  // on the backend: a no-op if a payment already finalized the order, and
-  // Stripe orders are rejected there (their sessions expire on their own).
-  //
-  // release=0 means the platform backend already made the release decision
-  // for this landing (PayPal legs) — some of those orders are DELIBERATELY
-  // left reserved because the buyer can still approve the payment, and
-  // releasing here would free stock mid-payment. Only release on direct
-  // provider landings (Paytrail), which carry no marker.
-  if (release !== "0") {
-    try {
-      await storefront.order.releasePending(orderId);
-    } catch {
-      // Best effort — the cron backstop covers it
-    }
-  }
-
+// Presentational only — deliberately does NOT release the order's reserved
+// stock. Every provider's cancel leg already resolved it server-side before
+// the browser gets here: Paytrail's /api/paytrail/cancel verifies the HMAC and
+// releases (registered as both redirect AND server-to-server callback), and
+// PayPal's /api/paypal/cancel releases under its token binding — or
+// deliberately keeps the order reserved because the buyer can still approve.
+// A release from this page would be a redundant round-trip at best, and at
+// worst would free stock mid-payment.
+export default async function CancelPage() {
   return (
     <section className="w-full min-h-[80vh] flex items-center justify-center">
       <Card className="w-[350px]">
