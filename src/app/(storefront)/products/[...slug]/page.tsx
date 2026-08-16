@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ProductGrid } from "@/components/Product/ProductGrid";
 import { ProductGridSkeleton } from "@/components/Product/ProductGridSkeleton";
 import { SearchInput } from "@/components/Product/SearchInput";
@@ -11,6 +11,8 @@ import {
   getCategories,
 } from "@/lib/categories";
 import { getStoreConfig, getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
+import { storefront } from "@/lib/storefront";
+import { NotFoundError } from "@putiikkipalvelu/storefront-sdk";
 import type { ProductSortOption } from "@putiikkipalvelu/storefront-sdk";
 
 export async function generateMetadata({
@@ -142,10 +144,30 @@ const ProductsPage = async ({
       ? null
       : findCategoryBySlug(categories, decodeURIComponent(lastSlug));
 
-  // If we have a category tree and the slug isn't in it, 404 immediately
-  // rather than bubbling an SDK error from the products fetch below
+  // The slug is not in the cached category tree — ask the API directly before
+  // 404-ing: a renamed category reports its current slug so we can issue a
+  // permanent (301) redirect, and a category missing from a stale tree cache
+  // still renders instead of 404-ing.
   if (!isAllProducts && !matchedCategory && categories.length > 0) {
-    notFound();
+    try {
+      await storefront.categories.getBySlug(decodeURIComponent(lastSlug));
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        if (error.redirectTo) {
+          // Preserve ?page/?sort/?q across the redirect
+          const qs = new URLSearchParams(
+            Object.entries(resolvedSearchParams).filter(
+              (entry): entry is [string, string] => entry[1] !== undefined
+            )
+          ).toString();
+          permanentRedirect(
+            `/products/${error.redirectTo}${qs ? `?${qs}` : ""}`
+          );
+        }
+        notFound();
+      }
+      throw error;
+    }
   }
 
   const heading = searchQuery

@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import ProductDetail from "@/components/Product/ProductDetail";
 import { Metadata, ResolvingMetadata } from "next";
 import ProductSchema from "@/components/StructuredData/ProductSchema";
@@ -6,21 +5,8 @@ import BreadcrumbSchema from "@/components/StructuredData/BreadcrumbSchema";
 import ReviewList from "@/components/Product/ReviewList";
 import ReviewFormDialog from "@/components/Product/ReviewFormDialog";
 import { getStoreConfig, getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
-import { storefront } from "@/lib/storefront";
 import { getUser } from "@/lib/actions/authActions";
-import { NotFoundError } from "@putiikkipalvelu/storefront-sdk";
-
-const getProductDataFromApi = async (slug: string) => {
-  try {
-    const product = await storefront.products.getBySlug(slug, {});
-    return product;
-  } catch (error) {
-    if (error instanceof NotFoundError) {
-      notFound();
-    }
-    throw error;
-  }
-};
+import { getProductBySlug } from "@/lib/product";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -34,7 +20,7 @@ export async function generateMetadata(
 
   // Fetch product and store config in parallel
   const [product, config] = await Promise.all([
-    getProductDataFromApi(slug),
+    getProductBySlug(slug),
     getStoreConfig(),
   ]);
 
@@ -81,7 +67,7 @@ const ProductIdRoute = async ({
   // logged-OUT so the form shows the name field), so a cheap cookie-presence
   // check is NOT sufficient here.
   const [product, config, userRes] = await Promise.all([
-    getProductDataFromApi(slug),
+    getProductBySlug(slug),
     getStoreConfig(),
     getUser(),
   ]);
