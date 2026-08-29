@@ -232,7 +232,9 @@ const PaytrailCheckoutPage = ({
       data.postal_code,
       cartItems,
       campaigns,
-      discountAmount
+      discountAmount,
+      data.address,
+      data.city
     );
 
     if (result.success) {
@@ -300,7 +302,9 @@ const PaytrailCheckoutPage = ({
       customerData!.postal_code,
       cartItems,
       campaigns,
-      discountAmount
+      discountAmount,
+      customerData!.address,
+      customerData!.city
     );
 
     if (result.success) {

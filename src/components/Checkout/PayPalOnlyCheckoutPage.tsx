@@ -104,7 +104,9 @@ const PayPalOnlyCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
       data.postal_code,
       cartItems,
       campaigns,
-      discountAmount
+      discountAmount,
+      data.address,
+      data.city
     );
 
     if (result.success) {
@@ -144,7 +146,9 @@ const PayPalOnlyCheckoutPage = ({ campaigns }: { campaigns: Campaign[] }) => {
       customerData!.postal_code,
       cartItems,
       campaigns,
-      discountAmount
+      discountAmount,
+      customerData!.address,
+      customerData!.city
     );
 
     if (result.success) {

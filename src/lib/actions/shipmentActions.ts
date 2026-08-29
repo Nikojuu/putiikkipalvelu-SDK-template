@@ -18,18 +18,24 @@ export type ShippingOptionsResult =
  * @param cartItems - Cart items for weight-based filtering (SDK calculates weight)
  * @param campaigns - Active campaigns for accurate cart total calculation (free shipping threshold)
  * @param discountAmount - Discount code amount in cents (subtracted from cart total for free shipping threshold)
+ * @param streetAddress - Customer's street address; lets Matkahuolto rank pickup points from the real address instead of the postal area
+ * @param city - Customer's city, same purpose as streetAddress
  */
 export async function getShippingOptions(
   postalCode: string,
   cartItems?: CartItem[],
   campaigns?: Campaign[],
-  discountAmount?: number
+  discountAmount?: number,
+  streetAddress?: string,
+  city?: string
 ): Promise<ShippingOptionsResult> {
   try {
     const data = await storefront.shipping.getOptions(postalCode, {
       cartItems,
       campaigns,
       discountAmount,
+      streetAddress,
+      city,
     });
     return { success: true, data };
   } catch (error) {

@@ -1,14 +1,15 @@
 "use client";
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   type ShipmentMethodsResponse,
   type HomeDeliveryOption,
   type PickupPointOption,
+  type OpeningHours,
 } from "@putiikkipalvelu/storefront-sdk";
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 /**
  * Selection value passed to parent when user selects a shipping option
@@ -42,6 +43,7 @@ export function SelectShipmentMethod({
 }: Props) {
   const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const [showAllPickupPoints, setShowAllPickupPoints] = useState(false);
+  const [expandedValue, setExpandedValue] = useState<string | null>(null);
 
   // Number of pickup points to show initially
   const INITIAL_PICKUP_POINTS = 4;
@@ -56,37 +58,21 @@ export function SelectShipmentMethod({
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)}€`;
 
   /**
-   * Renders free shipping badge or "add X more" message.
-   * Uses the LOWEST threshold across all methods for "add X more" message,
-   * so customers see the easiest path to free shipping.
+   * "Add X more for free shipping" is computed from the LOWEST threshold across
+   * every method, so it is the same sentence for every row. In the old card
+   * grid it was repeated inside each card; as a single line above the list it
+   * says the same thing once and keeps the rows thin.
    */
-  const renderFreeShippingInfo = (methodThreshold: number | null) => {
-    if (cartTotal === undefined) {
+  const freeShippingHint = (() => {
+    if (cartTotal === undefined) return null;
+    if (
+      lowestFreeShippingThreshold === null ||
+      cartTotal >= lowestFreeShippingThreshold
+    ) {
       return null;
     }
-
-    // If this specific method has free shipping, show badge
-    if (methodThreshold !== null && cartTotal >= methodThreshold) {
-      return (
-        <span className="text-xs font-secondary font-medium text-green-700 bg-green-100 px-2 py-1 border border-green-200">
-          Ilmainen toimitus
-        </span>
-      );
-    }
-
-    // Show "add X more" based on LOWEST threshold (easiest path to free shipping)
-    // Only show if there's a reachable threshold
-    if (lowestFreeShippingThreshold !== null && cartTotal < lowestFreeShippingThreshold) {
-      const remaining = lowestFreeShippingThreshold - cartTotal;
-      return (
-        <span className="text-xs font-secondary text-charcoal/60">
-          Lisää {formatPrice(remaining)} ilmaiseen toimitukseen
-        </span>
-      );
-    }
-
-    return null;
-  };
+    return `Lisää ${formatPrice(lowestFreeShippingThreshold - cartTotal)} ilmaiseen toimitukseen`;
+  })();
 
   /**
    * Check if free shipping is active for this method
@@ -99,6 +85,39 @@ export function SelectShipmentMethod({
     );
   };
 
+  /**
+   * Collapse the seven weekday arrays into as few lines as possible by
+   * grouping consecutive days that share the same hours, so a shop that is
+   * open 10-20 on weekdays reads "Ma-Pe 10:00-20:00" instead of five rows.
+   * Only Shipit returns these; Matkahuolto's office search has no such field.
+   */
+  const formatOpeningHours = (hours: OpeningHours | null) => {
+    if (!hours) return [];
+
+    const days: [string, string[]][] = [
+      ["Ma", hours.monday],
+      ["Ti", hours.tuesday],
+      ["Ke", hours.wednesday],
+      ["To", hours.thursday],
+      ["Pe", hours.friday],
+      ["La", hours.saturday],
+      ["Su", hours.sunday],
+    ];
+
+    const rows: { days: string; hours: string }[] = [];
+    for (const [label, slots] of days) {
+      const value = slots?.length ? slots.join(", ") : "Suljettu";
+      const previous = rows[rows.length - 1];
+      if (previous && previous.hours === value) {
+        // extend the run: "Ma" + "Ti" becomes "Ma-Ti"
+        previous.days = `${previous.days.split("-")[0]}-${label}`;
+      } else {
+        rows.push({ days: label, hours: value });
+      }
+    }
+    return rows;
+  };
+
   const formatDistance = (meters: number | null) => {
     if (meters === null) return null;
     if (meters < 1000) return `${meters}m`;
@@ -107,6 +126,11 @@ export function SelectShipmentMethod({
 
   const handleValueChange = (value: string) => {
     setSelectedValue(value);
+    // Picking a delivery option reveals its details straight away — that is
+    // when the shopper wants to know the opening hours and how the delivery
+    // works, not after hunting for a chevron. The chevron stays for peeking
+    // at rows the shopper has not committed to.
+    setExpandedValue(value);
 
     const data = JSON.parse(value) as {
       type: "pickup" | "delivery";
@@ -167,6 +191,12 @@ export function SelectShipmentMethod({
         <div className="mt-4 h-[1px] bg-gradient-to-r from-transparent via-rose-gold/30 to-transparent max-w-xs mx-auto" />
       </div>
 
+      {freeShippingHint && (
+        <p className="text-center font-secondary text-sm text-charcoal/60">
+          {freeShippingHint}
+        </p>
+      )}
+
       <RadioGroup
         value={selectedValue ?? undefined}
         onValueChange={handleValueChange}
@@ -176,7 +206,7 @@ export function SelectShipmentMethod({
         {/* PICKUP POINTS SECTION - Shown first (more popular in Finland)    */}
         {/* ================================================================= */}
         {hasPickupPoints && (
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 bg-rose-gold/60 diamond-shape" />
               <h3 className="text-xl md:text-2xl font-primary text-charcoal">
@@ -185,144 +215,147 @@ export function SelectShipmentMethod({
               <div className="flex-1 h-[1px] bg-gradient-to-r from-rose-gold/30 to-transparent" />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="border border-rose-gold/15 divide-y divide-rose-gold/10 bg-warm-white">
               {(showAllPickupPoints
                 ? pickupPoints
                 : pickupPoints.slice(0, INITIAL_PICKUP_POINTS)
               ).map((point) => {
                 const value = pickupValue(point);
                 const isSelected = selectedValue === value;
+                const inputId = `pickup-${point.id}-${point.shipmentMethodId}`;
+                const free = isFreeShipping(point.freeShippingThreshold);
+
+                const hours = formatOpeningHours(point.openingHours);
+                const hasDetails = Boolean(point.description) || hours.length > 0;
+                const isExpanded = expandedValue === value;
 
                 return (
                   <div
                     key={`${point.id}-${point.shipmentMethodId}-${point.serviceId}`}
-                    className={`group relative bg-warm-white cursor-pointer transition-all duration-500 ${
-                      isSelected ? "shadow-lg" : "hover:shadow-md"
+                    className={`border-l-2 transition-colors duration-200 ${
+                      isSelected
+                        ? "bg-cream/60 border-l-rose-gold"
+                        : "border-l-transparent hover:bg-cream/30"
                     }`}
                   >
-                    {/* Border frame */}
-                    <div
-                      className={`absolute inset-0 border pointer-events-none transition-colors duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/40"
-                          : "border-rose-gold/10 group-hover:border-rose-gold/25"
-                      }`}
-                    />
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <RadioGroupItem
+                        value={value}
+                        id={inputId}
+                        className="shrink-0"
+                      />
 
-                    {/* Corner accents */}
-                    <div
-                      className={`absolute top-0 left-0 w-4 h-4 border-l border-t transition-all duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/60 w-6 h-6"
-                          : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
-                      }`}
-                    />
-                    <div
-                      className={`absolute top-0 right-0 w-4 h-4 border-r border-t transition-all duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/60 w-6 h-6"
-                          : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
-                      }`}
-                    />
-                    <div
-                      className={`absolute bottom-0 left-0 w-4 h-4 border-l border-b transition-all duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/60 w-6 h-6"
-                          : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
-                      }`}
-                    />
-                    <div
-                      className={`absolute bottom-0 right-0 w-4 h-4 border-r border-b transition-all duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/60 w-6 h-6"
-                          : "border-rose-gold/30 group-hover:w-6 group-hover:h-6 group-hover:border-rose-gold/50"
-                      }`}
-                    />
-
-                    <CardContent className="p-4 relative">
-                      <div className="flex items-start space-x-3">
-                        <RadioGroupItem
-                          value={value}
-                          id={`pickup-${point.id}-${point.shipmentMethodId}`}
-                          className="mt-1.5 flex-shrink-0"
-                        />
-
-                        <Label
-                          htmlFor={`pickup-${point.id}-${point.shipmentMethodId}`}
-                          className="block cursor-pointer w-full min-w-0"
-                        >
-                          <div className="space-y-3">
-                            {/* Carrier badge */}
-                            <div className="flex items-center space-x-2 min-w-0 bg-cream/40 px-2 py-1 border border-rose-gold/10">
-                              {point.logo && (
-                                <img
-                                  src={point.logo}
-                                  alt={point.carrier ?? ""}
-                                  className="w-5 h-5 object-contain flex-shrink-0"
-                                />
-                              )}
-                              <span className="text-xs font-secondary font-medium text-charcoal/70 truncate">
-                                {point.carrier}
+                      <Label
+                        htmlFor={inputId}
+                        className="flex flex-1 items-center gap-3 min-w-0 cursor-pointer"
+                      >
+                        <span className="flex-1 min-w-0">
+                          <span className="font-secondary text-base font-medium text-charcoal line-clamp-2">
+                            {point.name}
+                          </span>
+                          <span className="flex items-baseline gap-1.5 font-secondary text-sm text-charcoal/60">
+                            <span className="truncate">
+                              {point.address}
+                              <span className="hidden sm:inline">
+                                , {point.postalCode} {point.city}
                               </span>
-                            </div>
+                            </span>
+                            {/* Distance lives in the right rail from sm up; on a
+                                phone it rides here instead, outside the truncate
+                                so the address gives way to it and not the other
+                                way round. */}
+                            {point.distance !== null && (
+                              <span className="sm:hidden shrink-0 tabular-nums">
+                                · {formatDistance(point.distance)}
+                              </span>
+                            )}
+                          </span>
+                        </span>
 
-                            {/* Location name */}
-                            <h4 className="font-secondary font-medium text-sm leading-tight line-clamp-2 min-h-10 text-charcoal">
-                              {point.name}
-                            </h4>
+                        <span className="flex items-center gap-3 shrink-0">
+                          {point.distance !== null && (
+                            <span className="hidden sm:inline font-secondary text-sm text-charcoal/50 tabular-nums">
+                              {formatDistance(point.distance)}
+                            </span>
+                          )}
+                          {point.logo && (
+                            <img
+                              src={point.logo}
+                              alt={point.carrier ?? ""}
+                              className="w-6 h-6 object-contain"
+                            />
+                          )}
+                          <span
+                            className={`font-primary text-base tabular-nums whitespace-nowrap ${
+                              free ? "text-green-700" : "text-charcoal"
+                            }`}
+                          >
+                            {free ? "Ilmainen" : formatPrice(point.price)}
+                          </span>
+                        </span>
+                      </Label>
 
-                            {/* Address */}
-                            <div className="text-xs font-secondary text-charcoal/60 space-y-1 bg-cream/30 p-2 border border-rose-gold/10">
-                              <p className="truncate font-medium">
-                                {point.address}
-                              </p>
-                              <p className="truncate">
-                                {point.postalCode} {point.city}
-                              </p>
-                            </div>
+                      {/* Outside the Label so opening details does not select the row */}
+                      {hasDetails && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedValue(isExpanded ? null : value)}
+                          aria-expanded={isExpanded}
+                          aria-label={`Lisätiedot: ${point.name}`}
+                          className="shrink-0 p-1 text-charcoal/40 transition-colors hover:text-rose-gold"
+                        >
+                          <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-200 ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                      )}
+                    </div>
 
-                            {/* Price and Distance */}
-                            <div className="flex flex-col gap-2 pt-1">
-                              <div className="flex justify-between items-center">
-                                {isFreeShipping(point.freeShippingThreshold) ? (
-                                  <span className="font-primary text-base text-green-700 bg-green-100 px-2 py-1 border border-green-200">
-                                    {formatPrice(point.price)}
-                                  </span>
-                                ) : (
-                                  <span className="font-primary text-base text-charcoal bg-rose-gold/10 px-2 py-1 border border-rose-gold/20">
-                                    {formatPrice(point.price)}
-                                  </span>
-                                )}
-                                {point.distance !== null && (
-                                  <span className="text-charcoal/60 text-xs font-secondary font-medium bg-cream/40 px-2 py-1 border border-rose-gold/10">
-                                    {formatDistance(point.distance)}
-                                  </span>
-                                )}
-                              </div>
-                              {renderFreeShippingInfo(
-                                point.freeShippingThreshold
-                              )}
-                            </div>
+                    {isExpanded && (
+                      <div className="px-4 pb-4 sm:pl-11 space-y-3">
+                        {point.description && (
+                          <p className="font-secondary text-base text-charcoal/75 leading-relaxed">
+                            {point.description}
+                          </p>
+                        )}
+                        {hours.length > 0 && (
+                          <div>
+                            <p className="font-secondary text-sm font-medium text-charcoal/80 mb-1">
+                              Aukioloajat
+                            </p>
+                            <ul className="space-y-1 max-w-64">
+                              {hours.map((row) => (
+                                <li
+                                  key={row.days}
+                                  className="flex justify-between gap-4 font-secondary text-sm text-charcoal/60"
+                                >
+                                  <span>{row.days}</span>
+                                  <span className="tabular-nums">{row.hours}</span>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
-                        </Label>
+                        )}
                       </div>
-                    </CardContent>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            {/* Show More/Less Button */}
+            {/* Show More/Less */}
             {pickupPoints.length > INITIAL_PICKUP_POINTS && (
-              <div className="flex justify-center pt-4">
+              <div className="flex justify-center">
                 <button
                   type="button"
                   onClick={() => setShowAllPickupPoints(!showAllPickupPoints)}
-                  className="inline-flex items-center gap-3 px-8 py-3 border border-charcoal/30 text-charcoal font-secondary text-sm tracking-wider uppercase transition-all duration-300 hover:border-rose-gold hover:text-rose-gold"
+                  className="font-secondary text-sm text-charcoal/70 underline underline-offset-4 transition-colors hover:text-rose-gold"
                 >
                   {showAllPickupPoints
-                    ? `Näytä vähemmän (${INITIAL_PICKUP_POINTS}/${pickupPoints.length})`
-                    : `Näytä lisää (${pickupPoints.length - INITIAL_PICKUP_POINTS} lisää)`}
+                    ? "Näytä vähemmän"
+                    : `Näytä lisää (${pickupPoints.length - INITIAL_PICKUP_POINTS})`}
                 </button>
               </div>
             )}
@@ -333,7 +366,7 @@ export function SelectShipmentMethod({
         {/* HOME DELIVERY SECTION                                            */}
         {/* ================================================================= */}
         {hasHomeDelivery && (
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 bg-rose-gold/60 diamond-shape" />
               <h3 className="text-xl md:text-2xl font-primary text-charcoal">
@@ -342,122 +375,65 @@ export function SelectShipmentMethod({
               <div className="flex-1 h-[1px] bg-gradient-to-r from-rose-gold/30 to-transparent" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="border border-rose-gold/15 divide-y divide-rose-gold/10 bg-warm-white">
               {homeDelivery.map((option) => {
                 const value = deliveryValue(option);
                 const isSelected = selectedValue === value;
+                const inputId = `delivery-${option.id}`;
+                const free = isFreeShipping(option.freeShippingThreshold);
+                const secondary = [
+                  option.description,
+                  option.estimatedDelivery
+                    ? `Toimitus ${option.estimatedDelivery} päivää`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
 
                 return (
-                  <div
+                  <Label
                     key={option.id}
-                    className={`group relative bg-warm-white cursor-pointer transition-all duration-500 ${
-                      isSelected ? "shadow-lg" : "hover:shadow-md"
+                    htmlFor={inputId}
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-l-2 transition-colors duration-200 ${
+                      isSelected
+                        ? "bg-cream/60 border-l-rose-gold"
+                        : "border-l-transparent hover:bg-cream/30"
                     }`}
                   >
-                    {/* Border frame */}
-                    <div
-                      className={`absolute inset-0 border pointer-events-none transition-colors duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/40"
-                          : "border-rose-gold/10 group-hover:border-rose-gold/25"
-                      }`}
+                    <RadioGroupItem
+                      value={value}
+                      id={inputId}
+                      className="shrink-0"
                     />
 
-                    {/* Corner accents */}
-                    <div
-                      className={`absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 transition-all duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/60 w-8 h-8"
-                          : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
-                      }`}
-                    />
-                    <div
-                      className={`absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 transition-all duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/60 w-8 h-8"
-                          : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
-                      }`}
-                    />
-                    <div
-                      className={`absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 transition-all duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/60 w-8 h-8"
-                          : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
-                      }`}
-                    />
-                    <div
-                      className={`absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 transition-all duration-500 ${
-                        isSelected
-                          ? "border-rose-gold/60 w-8 h-8"
-                          : "border-rose-gold/30 group-hover:w-8 group-hover:h-8 group-hover:border-rose-gold/50"
-                      }`}
-                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-secondary text-base font-medium text-charcoal line-clamp-2">
+                        {option.name}
+                      </p>
+                      {secondary && (
+                        <p className="font-secondary text-sm text-charcoal/60 truncate">
+                          {secondary}
+                        </p>
+                      )}
+                    </div>
 
-                    <CardContent className="p-6 relative">
-                      <div className="flex items-start space-x-4">
-                        <RadioGroupItem
-                          value={value}
-                          id={`delivery-${option.id}`}
-                          className="mt-1.5 flex-shrink-0"
+                    <div className="flex items-center gap-3 shrink-0">
+                      {option.logo && (
+                        <img
+                          src={option.logo}
+                          alt={option.carrier ?? option.name}
+                          className="w-6 h-6 object-contain"
                         />
-                        <div className="flex-1 min-w-0">
-                          <Label
-                            htmlFor={`delivery-${option.id}`}
-                            className="block cursor-pointer w-full"
-                          >
-                            <div className="space-y-3">
-                              {/* Header with logo and name */}
-                              <div className="flex items-center gap-3">
-                                {option.logo && (
-                                  <img
-                                    src={option.logo}
-                                    alt={option.carrier ?? option.name}
-                                    className="w-8 h-8 object-contain flex-shrink-0"
-                                  />
-                                )}
-                                <h4 className="font-primary text-lg leading-tight line-clamp-2 text-charcoal">
-                                  {option.name}
-                                </h4>
-                              </div>
-
-                              {/* Description */}
-                              <p className="text-sm min-h-10 font-secondary text-charcoal/60 leading-relaxed">
-                                {option.description ?? option.name}
-                              </p>
-
-                              {/* Price and delivery time */}
-                              <div className="flex flex-col gap-2 pt-2">
-                                <div className="flex justify-between items-end">
-                                  {option.estimatedDelivery && (
-                                    <div className="text-sm font-secondary text-charcoal/70">
-                                      <span className="font-medium text-charcoal">
-                                        Toimitus:{" "}
-                                      </span>
-                                      {option.estimatedDelivery} päivää
-                                    </div>
-                                  )}
-                                  {isFreeShipping(
-                                    option.freeShippingThreshold
-                                  ) ? (
-                                    <span className="font-primary text-xl text-green-700 bg-green-100 px-3 py-1.5 border border-green-200">
-                                      {formatPrice(option.price)}
-                                    </span>
-                                  ) : (
-                                    <span className="font-primary text-xl text-charcoal bg-rose-gold/10 px-3 py-1.5 border border-rose-gold/20">
-                                      {formatPrice(option.price)}
-                                    </span>
-                                  )}
-                                </div>
-                                {renderFreeShippingInfo(
-                                  option.freeShippingThreshold
-                                )}
-                              </div>
-                            </div>
-                          </Label>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </div>
+                      )}
+                      <span
+                        className={`font-primary text-base tabular-nums whitespace-nowrap ${
+                          free ? "text-green-700" : "text-charcoal"
+                        }`}
+                      >
+                        {free ? "Ilmainen" : formatPrice(option.price)}
+                      </span>
+                    </div>
+                  </Label>
                 );
               })}
             </div>
