@@ -12,6 +12,7 @@ import { CampaignAddedCartItems } from "./CampaignAddedCartItems";
 import { DiscountCodeInput } from "./DiscountCodeInput";
 import {
   calculateCartWithCampaigns,
+  isCampaignActive,
   type Campaign,
 } from "@putiikkipalvelu/storefront-sdk";
 import { trackViewCart } from "@/lib/gtm";
@@ -56,7 +57,7 @@ const CartPage = ({ campaigns }: { campaigns: Campaign[] }) => {
 
   // Find Buy X Pay Y campaign for CampaignAddedCartItems component
   const buyXPayYCampaign = campaigns.find(
-    (campaign) => campaign.type === "BUY_X_PAY_Y" && campaign.isActive
+    (campaign) => campaign.type === "BUY_X_PAY_Y" && isCampaignActive(campaign)
   );
 
   // Track view_cart on mount

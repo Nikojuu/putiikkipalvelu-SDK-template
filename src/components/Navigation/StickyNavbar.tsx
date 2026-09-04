@@ -1,6 +1,6 @@
 "use client";
 
-import type { Campaign } from "@putiikkipalvelu/storefront-sdk";
+import { isCampaignActive, type Campaign } from "@putiikkipalvelu/storefront-sdk";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -55,8 +55,11 @@ export default function StickyNavbar({
     };
   }, []);
 
+  // Only campaigns inside their date window — store-config hands us every
+  // toggled-on campaign (it is cached 24 h), the window is decided here.
+  const liveCampaigns = campaigns.filter((c) => isCampaignActive(c));
   const showCampaign =
-    !isScrolled && !isMegaMenuOpen && campaigns.length > 0;
+    !isScrolled && !isMegaMenuOpen && liveCampaigns.length > 0;
 
   return (
     <header
@@ -91,12 +94,12 @@ export default function StickyNavbar({
           className="bg-gradient-to-r from-deep-burgundy to-rose-gold text-white text-center py-2 px-4 shadow-sm"
         >
           <div className="flex flex-wrap justify-center items-center gap-x-4">
-            {campaigns.map((campaign, index) => (
+            {liveCampaigns.map((campaign, index) => (
               <span key={campaign.id}>
                 <span className="text-white text-sm font-medium tracking-wide">
                   {getCampaignEmoji(campaign.type)} {campaign.name}
                 </span>
-                {index < campaigns.length - 1 && (
+                {index < liveCampaigns.length - 1 && (
                   <span className="text-white/60 text-sm ml-4">|</span>
                 )}
               </span>
