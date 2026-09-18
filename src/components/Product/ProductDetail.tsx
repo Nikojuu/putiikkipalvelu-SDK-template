@@ -158,6 +158,11 @@ const ProductDetail = ({ product, imageAspectRatio = "SQUARE", customerAccountsE
               salePercent={
                 selectedVariation?.salePercent || product.salePercent
               }
+              lowestPriceBeforeSale={
+                (selectedVariation ?? product).lowestPriceBeforeSale != null
+                  ? (selectedVariation ?? product).lowestPriceBeforeSale! / 100
+                  : null
+              }
             />
           </div>
 

@@ -31,6 +31,10 @@ export const getPriceInfo = (item: Product): PriceInfo => {
         isActive && item.salePrice ? convertToEuros(item.salePrice) : null,
       salePercent: isActive && item.salePrice ? item.salePercent || null : null,
       isOnSale: isActive && !!item.salePrice,
+      lowestPriceBeforeSale:
+        isActive && item.salePrice
+          ? convertToEuros(item.lowestPriceBeforeSale ?? null)
+          : null,
     };
   }
 
@@ -50,6 +54,10 @@ export const getPriceInfo = (item: Product): PriceInfo => {
       salePercent:
         isActive && variation.salePrice ? variation.salePercent || null : null,
       isOnSale: isActive && !!variation.salePrice,
+      lowestPriceBeforeSale:
+        isActive && variation.salePrice
+          ? convertToEuros(variation.lowestPriceBeforeSale ?? null)
+          : null,
     };
   });
 

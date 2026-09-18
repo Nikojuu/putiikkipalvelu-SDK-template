@@ -5,6 +5,7 @@ interface PriceDisplayProps {
   originalPrice?: number; // Optional, original price for strikethrough
   isOnSale?: boolean; // Indicates if the product is on sale
   salePercent?: string | null; // Optional, sale percentage to display
+  lowestPriceBeforeSale?: number | null; // KSL 2:11 § reference price in euros; shown while on sale
 }
 
 export const PriceDisplay: React.FC<PriceDisplayProps> = ({
@@ -12,6 +13,7 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({
   originalPrice,
   isOnSale = false,
   salePercent,
+  lowestPriceBeforeSale,
 }) => {
   const discountPercentage = React.useMemo(() => {
     if (salePercent && !isNaN(parseFloat(salePercent))) {
@@ -39,6 +41,12 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({
         )}
       </div>
       <span className="text-lg font-bold">€{displayPrice.toFixed(2)}</span>
+      {/* Required by law (KSL 2:11 §) whenever a reduction is announced — never hide behind a link */}
+      {isOnSale && lowestPriceBeforeSale != null && (
+        <span className="text-sm text-gray-600">
+          Alin hinta 30 pv: €{lowestPriceBeforeSale.toFixed(2)}
+        </span>
+      )}
     </div>
   );
 };

@@ -43,6 +43,12 @@ export interface PriceInfo {
   salePrice: number | null;
   salePercent: string | null;
   isOnSale: boolean;
+  /**
+   * KSL 2:11 § "alin hinta 30 pv ennen alennusta" in euros. Must be shown next
+   * to a discounted price. null when not on sale, when the platform has no
+   * reference for this sale, or when the store owner turned the display off.
+   */
+  lowestPriceBeforeSale: number | null;
 }
 
 // ShipitShippingMethod kept for Order type (checkout/payment flow)

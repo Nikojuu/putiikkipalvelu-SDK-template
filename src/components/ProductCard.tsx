@@ -152,6 +152,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio
               </div>
             </div>
 
+            {/* KSL 2:11 § reference price — required next to any announced reduction, on cards too */}
+            {priceInfo.isOnSale && priceInfo.lowestPriceBeforeSale != null && (
+              <p className="text-xs text-charcoal/60 font-secondary">
+                Alin hinta 30 pv: {priceInfo.lowestPriceBeforeSale.toFixed(2)}€
+              </p>
+            )}
+
             {/* Decorative line */}
             <div className="h-[1px] w-12 bg-gradient-to-r from-rose-gold/40 to-transparent group-hover:w-full transition-all duration-500" />
           </div>
