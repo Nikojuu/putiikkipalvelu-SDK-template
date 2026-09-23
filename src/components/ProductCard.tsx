@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Share2 } from "lucide-react";
 
-import { getPriceInfo } from "@/lib/utils";
+import { getPriceInfo, announcedDiscountPercent } from "@/lib/utils";
 import Image from "next/image";
 import { imgproxyLoader } from "@/lib/imgproxy-loader";
 import { Skeleton } from "./ui/skeleton";
@@ -22,8 +22,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio
   const isAvailable = item.quantity !== 0;
   const quantityInfo = item.quantity === 0 ? "Tuote loppu" : "Saatavilla";
 
-  const discountPercentage = priceInfo.salePercent
-    ? ((1 - parseFloat(priceInfo.salePercent)) * 100).toFixed(0)
+  const discountPercentage = priceInfo.isOnSale
+    ? announcedDiscountPercent(
+        priceInfo.salePrice,
+        priceInfo.lowestPriceBeforeSale,
+        priceInfo.salePercent
+      )
     : null;
 
   return (
@@ -53,8 +57,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio
             {/* Elegant overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            {/* Sale badge */}
-            {priceInfo.isOnSale && priceInfo.salePercent && (
+            {/* Sale badge — % measured against the 30-day lowest price when known */}
+            {discountPercentage !== null && (
               <div className="absolute top-4 left-4 z-20">
                 <div className="relative">
                   <div className="bg-deep-burgundy text-warm-white text-xs font-secondary tracking-wider px-3 py-1.5">
@@ -69,9 +73,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ item, imageAspectRatio
             {item.isDigital && (
               <div
                 className={`absolute ${
-                  priceInfo.isOnSale && priceInfo.salePercent
-                    ? "top-12"
-                    : "top-4"
+                  discountPercentage !== null ? "top-12" : "top-4"
                 } left-4 z-20`}
               >
                 <div className="bg-sage-green text-warm-white text-xs font-secondary tracking-wider px-3 py-1.5">

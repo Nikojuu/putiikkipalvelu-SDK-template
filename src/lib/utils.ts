@@ -94,5 +94,36 @@ export const getDisplayPriceSelectedProduct = (
     : product.price / 100;
 };
 
+/**
+ * Announced discount percentage. KKV 4.5 (EUT C-330/23): when a 30-day lowest
+ * price exists the reduction is measured against it, not the regular price —
+ * and a sale price that does not undercut it is no reduction at all (null).
+ * Without a reference (store toggle off, no 30-day history) fall back to the
+ * merchant's percentage against the regular price.
+ * Prices in any unit as long as both use the same one.
+ */
+export const announcedDiscountPercent = (
+  salePrice: number | null,
+  lowestPriceBeforeSale: number | null | undefined,
+  salePercent: string | null | undefined
+): string | null => {
+  if (salePrice === null) return null;
+  if (lowestPriceBeforeSale != null) {
+    if (salePrice >= lowestPriceBeforeSale) return null;
+    return Math.round((1 - salePrice / lowestPriceBeforeSale) * 100).toString();
+  }
+  if (salePercent && !isNaN(parseFloat(salePercent))) {
+    return ((1 - parseFloat(salePercent)) * 100).toFixed(0);
+  }
+  return null;
+};
+
+/** Reads the KSL 2:11 § reference off any API object that may carry it. */
+export const lowestPriceOf = (o: object | null | undefined): number | null => {
+  if (!o || !("lowestPriceBeforeSale" in o)) return null;
+  const v = (o as { lowestPriceBeforeSale?: unknown }).lowestPriceBeforeSale;
+  return typeof v === "number" ? v : null;
+};
+
 export const OPEN_GRAPH_IMAGE = "/kuva1.jpg";
 export const TWITTER_IMAGE = "/kuva2.jpg";

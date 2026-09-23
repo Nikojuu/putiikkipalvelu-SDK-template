@@ -1,4 +1,5 @@
 import React from "react";
+import { announcedDiscountPercent } from "@/lib/utils";
 
 interface PriceDisplayProps {
   displayPrice: number; // Final calculated price to display
@@ -15,12 +16,15 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({
   salePercent,
   lowestPriceBeforeSale,
 }) => {
-  const discountPercentage = React.useMemo(() => {
-    if (salePercent && !isNaN(parseFloat(salePercent))) {
-      return ((1 - parseFloat(salePercent)) * 100).toFixed(0);
-    }
-    return null;
-  }, [salePercent]);
+  // KKV 4.5: the announced % is measured against the 30-day lowest price when
+  // one exists; a sale price not below it is no reduction → no badge.
+  const discountPercentage = React.useMemo(
+    () =>
+      isOnSale
+        ? announcedDiscountPercent(displayPrice, lowestPriceBeforeSale, salePercent)
+        : null,
+    [isOnSale, displayPrice, lowestPriceBeforeSale, salePercent]
+  );
 
   return (
     <div className="flex flex-col items-end gap-1">

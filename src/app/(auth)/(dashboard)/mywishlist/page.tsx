@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Heart, ShoppingCart, Euro } from "lucide-react";
-import { isSaleActive } from "@/lib/utils";
+import { isSaleActive, lowestPriceOf } from "@/lib/utils";
 import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import DeleteWishlistButton from "@/components/Auth/DeleteWishListButton";
 
@@ -157,6 +157,9 @@ const WishlistPage = async () => {
               let effectivePrice: number;
               let isItemOnSale = false;
               let originalPrice: number;
+              const lowestPriceBeforeSale = item.variation
+                ? lowestPriceOf(item.variation)
+                : lowestPriceOf(item.product);
 
               if (item.variation) {
                 // Handle variation-specific pricing logic
@@ -249,6 +252,11 @@ const WishlistPage = async () => {
                               </>
                             )}
                           </div>
+                          {isItemOnSale && lowestPriceBeforeSale !== null && (
+                            <p className="text-xs font-secondary text-charcoal/60 mb-3 -mt-2">
+                              Alin hinta 30 pv: {(lowestPriceBeforeSale / 100).toFixed(2)} €
+                            </p>
+                          )}
                           <p className="text-xs font-secondary text-charcoal/50">
                             Lisätty:{" "}
                             {new Date(item.createdAt).toLocaleDateString(
