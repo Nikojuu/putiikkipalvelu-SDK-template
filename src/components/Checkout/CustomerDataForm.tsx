@@ -6,6 +6,10 @@ import { CustomerData, customerDataSchema } from "@/lib/zodSchemas";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "../ui/phone-input";
+import {
+  parsePhoneNumber,
+  type Value as PhoneValue,
+} from "react-phone-number-input";
 import { Loader2 } from "lucide-react";
 
 interface CustomerDataFormProps {
@@ -19,6 +23,21 @@ export default function CustomerDataForm({
   initialData,
   isLoading,
 }: CustomerDataFormProps) {
+  // The phone input only takes its initial value from `value` (E.164), so it
+  // is controlled here; the saved value is the formatted text ("+358 40 ..."),
+  // parsed back to E.164 so going back from the shipping step keeps it
+  const [phone, setPhone] = React.useState<PhoneValue | undefined>(
+    () =>
+      (initialData?.phone && parsePhoneNumber(initialData.phone)?.number) ||
+      undefined,
+  );
+
+  // Company fields stay hidden unless the buyer ticks "Tilaan yrityksenä";
+  // pre-ticked when returning from the shipping step with a company filled in
+  const [isCompany, setIsCompany] = React.useState(
+    () => !!initialData?.company_name,
+  );
+
   const [form, fields] = useForm({
     onValidate({ formData }) {
       return parseWithZod(formData, { schema: customerDataSchema });
@@ -30,7 +49,8 @@ export default function CustomerDataForm({
       const formData = new FormData(event.currentTarget);
       const result = customerDataSchema.safeParse(Object.fromEntries(formData));
       if (result.success) {
-        handleSubmit(result.data);
+        const { is_company: _isCompany, ...customerData } = result.data;
+        handleSubmit(customerData);
       }
     },
     defaultValue: initialData || undefined,
@@ -74,6 +94,7 @@ export default function CustomerDataForm({
                   name={fields.first_name.name}
                   defaultValue={initialData?.first_name || ""}
                   type="text"
+                  autoComplete="given-name"
                   placeholder="Anna etunimesi"
                   className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
                 />
@@ -95,6 +116,7 @@ export default function CustomerDataForm({
                   name={fields.last_name.name}
                   defaultValue={initialData?.last_name || ""}
                   type="text"
+                  autoComplete="family-name"
                   placeholder="Anna sukunimesi"
                   className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
                 />
@@ -119,6 +141,7 @@ export default function CustomerDataForm({
                 name={fields.email.name}
                 defaultValue={initialData?.email || ""}
                 type="email"
+                autoComplete="email"
                 placeholder="Anna sähköpostiosoitteesi"
                 className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
               />
@@ -142,7 +165,8 @@ export default function CustomerDataForm({
                 name={fields.address.name}
                 defaultValue={initialData?.address || ""}
                 type="text"
-                placeholder="Anna katuosoitteesi"
+                autoComplete="street-address"
+                placeholder="Esim. Esimerkkitie 1 A 12"
                 className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
               />
               {fields.address.errors && (
@@ -166,6 +190,9 @@ export default function CustomerDataForm({
                   name={fields.postal_code.name}
                   defaultValue={initialData?.postal_code || ""}
                   type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  autoComplete="postal-code"
                   placeholder="Anna postinumerosi"
                   className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
                 />
@@ -187,6 +214,7 @@ export default function CustomerDataForm({
                   name={fields.city.name}
                   defaultValue={initialData?.city || ""}
                   type="text"
+                  autoComplete="address-level2"
                   placeholder="Anna kaupungin nimi"
                   className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
                 />
@@ -206,15 +234,89 @@ export default function CustomerDataForm({
               <PhoneInput
                 id={fields.phone.id}
                 name={fields.phone.name}
+                value={phone}
+                onChange={setPhone}
                 defaultCountry="FI"
                 international
                 placeholder="Anna puhelin numerosi"
                 className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
               />
+              <p className="text-xs font-secondary text-charcoal/60">
+                Kuljetusyhtiö lähettää numeroon ilmoitukset toimituksesta.
+              </p>
               {fields.phone.errors && (
                 <p className="text-sm font-secondary text-deep-burgundy">
                   {fields.phone.errors}
                 </p>
+              )}
+            </div>
+
+            {/* Company (optional, behind a checkbox) */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-2">
+                <input
+                  id="is_company"
+                  name="is_company"
+                  type="checkbox"
+                  checked={isCompany}
+                  onChange={(e) => setIsCompany(e.target.checked)}
+                  className="h-4 w-4 rounded border-rose-gold/40 accent-charcoal"
+                />
+                <label
+                  htmlFor="is_company"
+                  className="text-sm font-secondary text-charcoal cursor-pointer"
+                >
+                  Tilaan yrityksenä
+                </label>
+              </div>
+              {isCompany && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor={fields.company_name.id}
+                      className="text-sm font-secondary text-charcoal"
+                    >
+                      Yrityksen nimi *
+                    </Label>
+                    <Input
+                      id={fields.company_name.id}
+                      name={fields.company_name.name}
+                      defaultValue={initialData?.company_name || ""}
+                      type="text"
+                      maxLength={100}
+                      autoComplete="organization"
+                      placeholder="Esim. Yritys Oy"
+                      className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
+                    />
+                    {fields.company_name.errors && (
+                      <p className="text-sm font-secondary text-deep-burgundy">
+                        {fields.company_name.errors}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor={fields.business_id.id}
+                      className="text-sm font-secondary text-charcoal"
+                    >
+                      Y-tunnus *
+                    </Label>
+                    <Input
+                      id={fields.business_id.id}
+                      name={fields.business_id.name}
+                      defaultValue={initialData?.business_id || ""}
+                      type="text"
+                      autoComplete="off"
+                      placeholder="1234567-8"
+                      className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal placeholder:text-charcoal/40"
+                    />
+                    {fields.business_id.errors && (
+                      <p className="text-sm font-secondary text-deep-burgundy">
+                        {fields.business_id.errors}
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>

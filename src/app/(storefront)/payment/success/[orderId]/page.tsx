@@ -349,6 +349,13 @@ export default async function PaymentSuccessPage({
                     {order.orderCustomerData.firstName}{" "}
                     {order.orderCustomerData.lastName}
                   </p>
+                  {order.orderCustomerData.companyName && (
+                    <p>
+                      {order.orderCustomerData.companyName}
+                      {order.orderCustomerData.businessId &&
+                        ` (Y-tunnus ${order.orderCustomerData.businessId})`}
+                    </p>
+                  )}
                   <p>{order.orderCustomerData.address}</p>
                   <p>
                     {order.orderCustomerData.postalCode}{" "}
