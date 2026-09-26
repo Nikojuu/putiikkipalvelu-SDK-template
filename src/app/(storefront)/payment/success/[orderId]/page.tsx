@@ -214,10 +214,14 @@ export default async function PaymentSuccessPage({
                       <div className="font-secondary text-sm text-charcoal/60 space-y-0.5">
                         <p>Määrä: {item.quantity} kpl</p>
                         <p>Yksikköhinta: {formatPrice(item.price)}</p>
-                        <p>
-                          ALV:{" "}
-                          {Number(item.vatRate).toFixed(1).replace(".", ",")}%
-                        </p>
+                        {/* 0 % = seller outside the VAT register (or no VAT):
+                            no rate may be shown */}
+                        {Number(item.vatRate) > 0 && (
+                          <p>
+                            ALV:{" "}
+                            {Number(item.vatRate).toFixed(1).replace(".", ",")}%
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
@@ -278,7 +282,7 @@ export default async function PaymentSuccessPage({
                     </span>
                   </div>
 
-                  {order.orderShipmentMethod.vatRate && (
+                  {Number(order.orderShipmentMethod.vatRate) > 0 && (
                     <div className="flex justify-between items-center font-secondary">
                       <span className="text-charcoal/60">ALV:</span>
                       <span className="text-charcoal">
