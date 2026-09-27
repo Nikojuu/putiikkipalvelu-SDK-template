@@ -80,8 +80,11 @@ function Toggle({
 
 export default function CookieBanner({
   analytics,
+  showPrivacyLink,
 }: {
   analytics: AnalyticsConfig | undefined;
+  /** False when the owner has hidden the privacy page (it would 404) */
+  showPrivacyLink: boolean;
 }) {
   const { hasConsented, hydrated, consent, updateConsent } = useConsentStore();
   const [showPreferences, setShowPreferences] = useState(false);
@@ -134,13 +137,18 @@ export default function CookieBanner({
             </h3>
             <p className="mt-1.5 text-sm text-muted-foreground">
               Käytämme evästeitä parantaaksemme käyttökokemustasi ja
-              analysoidaksemme sivuston liikennettä.{" "}
-              <a
-                href="/privacy"
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                Lue lisää
-              </a>
+              analysoidaksemme sivuston liikennettä.
+              {showPrivacyLink && (
+                <>
+                  {" "}
+                  <a
+                    href="/privacy"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    Lue lisää
+                  </a>
+                </>
+              )}
             </p>
             <div className="mt-4 flex items-center gap-3">
               <Button onClick={handleAcceptAll} size="sm">
@@ -170,13 +178,18 @@ export default function CookieBanner({
             </h3>
             <p className="mt-1.5 text-sm text-muted-foreground">
               Valitse, mitkä evästeet hyväksyt. Välttämättömät evästeet ovat aina
-              käytössä.{" "}
-              <a
-                href="/privacy"
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                Tietosuojakäytäntö
-              </a>
+              käytössä.
+              {showPrivacyLink && (
+                <>
+                  {" "}
+                  <a
+                    href="/privacy"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    Tietosuojakäytäntö
+                  </a>
+                </>
+              )}
             </p>
 
             <div className="mt-4 space-y-3">

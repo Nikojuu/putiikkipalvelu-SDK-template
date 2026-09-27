@@ -1,14 +1,16 @@
 import { MetadataRoute } from "next";
 import type { Category } from "@putiikkipalvelu/storefront-sdk";
-import { getStoreConfig, getSEOValue } from "@/lib/storeConfig";
+import { getStoreConfig, getSEOValue, getLegalPages } from "@/lib/storeConfig";
 import { storefront } from "@/lib/storefront";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Get domain from store config with fallback
   let domain = process.env.NEXT_PUBLIC_BASE_URL || "https://example.com";
+  let legalPages = getLegalPages(null);
   try {
     const config = await getStoreConfig();
     domain = getSEOValue(config.seo.domain, domain);
+    legalPages = getLegalPages(config);
   } catch (error) {
     console.error("Error fetching store config for sitemap:", error);
   }
@@ -67,7 +69,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { route: "/about", changefreq: "monthly", priority: 0.8 },
     { route: "/contact", changefreq: "monthly", priority: 0.7 },
     { route: "/gallery", changefreq: "weekly", priority: 0.6 },
-    { route: "/privacy", changefreq: "yearly", priority: 0.5 },
     { route: "/products", changefreq: "daily", priority: 0.9 },
   ].map(({ route, changefreq, priority }) => ({
     url: `${domain}${route}`,
@@ -76,5 +77,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority,
   }));
 
-  return [...staticPages, ...productUrls, ...categoryUrls];
+  // Hidden legal pages return 404, so list only the published ones
+  const legalUrls = legalPages.map((page) => ({
+    url: `${domain}/${page.slug}`,
+    lastModified: new Date(),
+    changefreq: "yearly",
+    priority: 0.5,
+  }));
+
+  return [...staticPages, ...legalUrls, ...productUrls, ...categoryUrls];
 }

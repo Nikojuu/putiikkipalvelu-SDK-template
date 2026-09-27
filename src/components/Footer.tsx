@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { InstagramLogoIcon } from "@radix-ui/react-icons";
 import { Mail, Phone } from "lucide-react";
-import type { AnalyticsConfig } from "@putiikkipalvelu/storefront-sdk";
+import type { AnalyticsConfig, NavPage } from "@putiikkipalvelu/storefront-sdk";
 import { CookieSettingsLink } from "@/components/CookieSettingsLink";
 
 interface FooterProps {
@@ -14,9 +14,11 @@ interface FooterProps {
   analytics?: AnalyticsConfig | undefined;
   /** KKV peruutustoiminto — when false, the footer link is hidden. */
   withdrawalEnabled?: boolean;
+  /** Published legal pages (privacy, terms) — hidden ones are left out. */
+  legalPages: NavPage[];
 }
 
-export function Footer({ logoUrl, storeName, email, phone, instagramUrl, analytics, withdrawalEnabled = true }: FooterProps) {
+export function Footer({ logoUrl, storeName, email, phone, instagramUrl, analytics, withdrawalEnabled = true, legalPages }: FooterProps) {
   // Extract Instagram handle from URL for display
   const instagramHandle = instagramUrl
     ? instagramUrl.split("/").filter(Boolean).pop() || storeName.toLowerCase().replace(/\s+/g, "_")
@@ -92,18 +94,15 @@ export function Footer({ logoUrl, storeName, email, phone, instagramUrl, analyti
               >
                 Yhteystiedot
               </Link>
-              <Link
-                href="/privacy"
-                className="text-sm font-secondary text-warm-white/70 hover:text-rose-gold transition-colors duration-300"
-              >
-                Tietosuojakäytäntö
-              </Link>
-              <Link
-                href="/terms"
-                className="text-sm font-secondary text-warm-white/70 hover:text-rose-gold transition-colors duration-300"
-              >
-                Maksu- ja toimitusehdot
-              </Link>
+              {legalPages.map((page) => (
+                <Link
+                  key={page.slug}
+                  href={`/${page.slug}`}
+                  className="text-sm font-secondary text-warm-white/70 hover:text-rose-gold transition-colors duration-300"
+                >
+                  {page.title}
+                </Link>
+              ))}
               {withdrawalEnabled ? (
                 <Link
                   href="/peruutus"

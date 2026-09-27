@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import { textPrimary, textSecondary } from "@/lib/fonts";
 import StickyNavbar from "@/components/Navigation/StickyNavbar";
-import { getStoreConfig, getSEOValue, SEO_FALLBACKS } from "@/lib/storeConfig";
+import { getStoreConfig, getSEOValue, getLegalPages, SEO_FALLBACKS } from "@/lib/storeConfig";
 import OrganizationSchema from "@/components/StructuredData/OrganizationSchema";
 import LocalBusinessSchema from "@/components/StructuredData/LocalBusinessSchema";
 import { SEO_ENABLED } from "@/app/utils/constants";
@@ -112,6 +112,7 @@ export default async function RootLayout({
   const instagramUrl = storeConfig.seo.instagramUrl;
   const analytics = storeConfig.analytics;
   const withdrawalEnabled = storeConfig.features?.withdrawalEnabled ?? true;
+  const legalPages = getLegalPages(storeConfig);
   const customerAccountsEnabled =
     storeConfig.features?.customerAccountsEnabled ?? true;
 
@@ -146,11 +147,16 @@ export default async function RootLayout({
           <Navbar campaigns={campaigns} logoUrl={logoUrl} navPages={navPages} customerAccountsEnabled={customerAccountsEnabled} />
         </StickyNavbar>
         <main className="min-h-[75vh] max-w-[3500px]">{children}</main>
-        <Footer logoUrl={logoUrl} storeName={storeName} email={storeEmail} phone={storePhone} instagramUrl={instagramUrl} analytics={analytics} withdrawalEnabled={withdrawalEnabled} />
+        <Footer logoUrl={logoUrl} storeName={storeName} email={storeEmail} phone={storePhone} instagramUrl={instagramUrl} analytics={analytics} withdrawalEnabled={withdrawalEnabled} legalPages={legalPages} />
 
         <Toaster />
         <ConsentInit gtmEnabled={!!analytics?.gtmContainerId} />
-        {needsCookieBanner(analytics) && <CookieBanner analytics={analytics} />}
+        {needsCookieBanner(analytics) && (
+          <CookieBanner
+            analytics={analytics}
+            showPrivacyLink={legalPages.some((page) => page.slug === "privacy")}
+          />
+        )}
       </body>
     </html>
   );

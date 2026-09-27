@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { storefront } from "./storefront";
-import type { StoreConfig } from "@putiikkipalvelu/storefront-sdk";
+import type { NavPage, StoreConfig } from "@putiikkipalvelu/storefront-sdk";
 
 // Re-export StoreConfig type for convenience
 export type { StoreConfig };
@@ -28,6 +28,23 @@ export const SEO_FALLBACKS = {
  */
 export function getSEOValue<T>(value: T | null | undefined, fallback: T): T {
   return value ?? fallback;
+}
+
+/**
+ * Before `legalPages` existed the backend never let owners hide these,
+ * so a response without the field means both pages are published.
+ */
+const DEFAULT_LEGAL_PAGES: NavPage[] = [
+  { slug: "privacy", title: "Tietosuojakäytäntö" },
+  { slug: "terms", title: "Maksu- ja toimitusehdot" },
+];
+
+/**
+ * Published legal pages (privacy, terms) to link in the footer.
+ * A page the owner has hidden returns 404, so link only these.
+ */
+export function getLegalPages(config: StoreConfig | null): NavPage[] {
+  return config?.legalPages ?? DEFAULT_LEGAL_PAGES;
 }
 
 /**
