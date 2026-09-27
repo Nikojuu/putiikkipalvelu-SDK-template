@@ -297,6 +297,40 @@ function BlockRenderer({ block }: { block: PageBlock }) {
         </div>
       );
 
+    // EU legal guarantee notice: official artwork, shown whole and unmodified
+    // (no cropping or format conversion), always with a clickable link to the
+    // same page as its QR code — both required by the Commission guidelines
+    case "legal_guarantee_notice":
+      return (
+        <figure className="mx-auto flex max-w-2xl flex-col items-center gap-3">
+          <a
+            href={block.data.linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={block.data.imageUrl}
+              alt={block.data.alt}
+              width={block.data.width}
+              height={block.data.height}
+              className="h-auto w-full"
+            />
+          </a>
+          <figcaption className="text-sm">
+            <a
+              href={block.data.linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              {block.data.linkUrl.replace(/^https?:\/\//, "")}
+            </a>
+          </figcaption>
+        </figure>
+      );
+
     default:
       return null;
   }
