@@ -249,13 +249,15 @@ export default function LoginForm() {
           result.error || "Vahvista sähköpostiosoitteesi ennen kirjautumista."
         );
       } else if (result.error) {
-        setFormError(
-          "Kirjautuminen epäonnistui. Tarkista sähköpostisi ja salasanasi."
-        );
+        // Rate limiting isn't a wrong password; say so instead of the generic text
+        const message =
+          "rateLimited" in result && result.rateLimited
+            ? result.error
+            : "Kirjautuminen epäonnistui. Tarkista sähköpostisi ja salasanasi.";
+        setFormError(message);
         toast({
           title: "Kirjautuminen epäonnistui",
-          description:
-            "Kirjautuminen epäonnistui. Tarkista sähköpostisi ja salasanasi.",
+          description: message,
           className:
             "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-800",
           action: (
