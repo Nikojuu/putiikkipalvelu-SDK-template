@@ -42,6 +42,7 @@ type FormState = {
     firstName?: string[];
     lastName?: string[];
     email?: string[];
+    currentPassword?: string[];
   };
 };
 
@@ -50,6 +51,10 @@ const EditCustomerForm = ({ user }: { user: User }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formState, setFormState] = useState<FormState>({});
+  const [email, setEmail] = useState(user.email);
+  // Changing the email needs the current password (API requirement)
+  const emailChanged =
+    email.trim().toLowerCase() !== user.email.trim().toLowerCase();
   const router = useRouter();
   const { toast } = useToast();
   const handleSubmit = async (formData: FormData) => {
@@ -266,7 +271,10 @@ const EditCustomerForm = ({ user }: { user: User }) => {
                 id="email"
                 name="email"
                 type="text"
-                defaultValue={user.email}
+                // Controlled: <form action> resets uncontrolled inputs after
+                // submit, which would desync this from emailChanged
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={isPending}
                 className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal"
               />
@@ -276,6 +284,30 @@ const EditCustomerForm = ({ user }: { user: User }) => {
                 </p>
               )}
             </div>
+
+            {emailChanged && (
+              <div className="space-y-2">
+                <label htmlFor="currentPassword" className="text-sm font-secondary text-charcoal">
+                  Nykyinen salasana
+                </label>
+                <Input
+                  id="currentPassword"
+                  name="currentPassword"
+                  type="password"
+                  autoComplete="current-password"
+                  disabled={isPending}
+                  className="bg-cream/50 border-rose-gold/20 focus:border-rose-gold/50 focus:ring-rose-gold/20 font-secondary text-charcoal"
+                />
+                <p className="text-xs font-secondary text-charcoal/50">
+                  Sähköpostiosoitteen vaihtaminen vaatii nykyisen salasanasi.
+                </p>
+                {formState.fieldErrors?.currentPassword && (
+                  <p className="text-sm font-secondary text-deep-burgundy">
+                    {formState.fieldErrors.currentPassword[0]}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="h-[1px] bg-gradient-to-r from-transparent via-rose-gold/30 to-transparent" />
 

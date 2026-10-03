@@ -1,6 +1,7 @@
 import { getUser } from "@/lib/actions/authActions";
 import { getStoreConfig } from "@/lib/storeConfig";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { imgproxyUrl } from "@/lib/imgproxy-loader";
 import {
@@ -70,7 +71,9 @@ interface OrdersResponse {
 }
 
 const getOrders = async (userId: string): Promise<OrdersResponse> => {
-  if (!userId) {
+  // The API only returns orders for the customer who owns the session
+  const sessionId = (await cookies()).get("session-id")?.value;
+  if (!userId || !sessionId) {
     redirect("/login");
   }
   try {
@@ -79,6 +82,7 @@ const getOrders = async (userId: string): Promise<OrdersResponse> => {
       {
         headers: {
           "x-api-key": process.env.STOREFRONT_API_KEY || "",
+          "x-session-id": sessionId,
         },
       }
     );

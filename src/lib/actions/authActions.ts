@@ -32,6 +32,8 @@ const EditProfileSchema = z.object({
   lastName: z.string().min(1, "Sukunimi on pakollinen"),
   email: z.string().email("Virheellinen sähköpostiosoite"),
   subscribeToNewsletter: z.boolean().optional().default(false),
+  // Only sent (and required by the API) when the email changes
+  currentPassword: z.string().optional(),
 });
 
 const ForgotPasswordSchema = z.object({
@@ -278,13 +280,14 @@ export async function editCustomerProfile(formData: FormData) {
     lastName: formData.get("lastName"),
     email: formData.get("email"),
     subscribeToNewsletter: formData.get("subscribeToNewsletter") === "true",
+    currentPassword: formData.get("currentPassword") || undefined,
   });
 
   if (!validatedFields.success) {
     return { error: validatedFields.error.flatten().fieldErrors };
   }
 
-  const { firstName, lastName, email, subscribeToNewsletter } =
+  const { firstName, lastName, email, subscribeToNewsletter, currentPassword } =
     validatedFields.data;
 
   const sessionId = await getSessionId();
@@ -298,6 +301,7 @@ export async function editCustomerProfile(formData: FormData) {
       lastName,
       email,
       isSubscribedToNewsletter: subscribeToNewsletter,
+      currentPassword,
     });
 
     return {
