@@ -7,7 +7,9 @@ import {
   ValidationError,
   VerificationRequiredError,
   NotFoundError,
+  RateLimitError,
 } from "@putiikkipalvelu/storefront-sdk";
+import { clientIpHeaders } from "@/lib/clientIp";
 import type { Customer } from "@putiikkipalvelu/storefront-sdk";
 
 // =============================================================================
@@ -131,7 +133,7 @@ export async function registerCustomer(formData: FormData) {
       email,
       password,
       isSubscribedToNewsletter: subscribeToNewsletter,
-    });
+    }, { headers: await clientIpHeaders() });
 
     if (!response.success || !response.customer) {
       return { error: "Invalid response from server. Please try again." };
@@ -146,6 +148,9 @@ export async function registerCustomer(formData: FormData) {
     };
   } catch (error) {
     console.error("Registration error:", error);
+    if (error instanceof RateLimitError) {
+      return { error: "Liian monta rekisteröitymisyritystä. Yritä myöhemmin uudelleen." };
+    }
     if (error instanceof ValidationError) {
       return { error: error.message };
     }
@@ -169,9 +174,12 @@ export async function loginCustomer(formData: FormData) {
   const guestCartId = await getGuestCartId();
 
   try {
-    const response = await storefront.customer.login(email, password, {
-      cartId: guestCartId,
-    });
+    const response = await storefront.customer.login(
+      email,
+      password,
+      { cartId: guestCartId },
+      { headers: await clientIpHeaders() }
+    );
 
     if (!response.success || !response.customer || !response.sessionId || !response.expiresAt) {
       return { error: "Invalid response from server. Please try again." };
@@ -190,6 +198,10 @@ export async function loginCustomer(formData: FormData) {
     };
   } catch (error) {
     console.error("Login error:", error);
+
+    if (error instanceof RateLimitError) {
+      return { error: "Liian monta kirjautumisyritystä. Yritä hetken kuluttua uudelleen." };
+    }
 
     // Handle email verification required
     if (error instanceof VerificationRequiredError) {
@@ -351,11 +363,16 @@ export async function deleteCustomerAccount() {
 export async function resendVerificationEmail(customerId: string) {
   try {
     // Verification email is sent automatically by the server
-    const response = await storefront.customer.resendVerification(customerId);
+    const response = await storefront.customer.resendVerification(customerId, {
+      headers: await clientIpHeaders(),
+    });
 
     return { success: true, message: response.message || "Verification email sent!" };
   } catch (error) {
     console.error("Email verification error:", error);
+    if (error instanceof RateLimitError) {
+      return { error: "Liian monta vahvistusviestipyyntöä. Yritä myöhemmin uudelleen." };
+    }
     if (error instanceof ValidationError) {
       return { error: error.message };
     }

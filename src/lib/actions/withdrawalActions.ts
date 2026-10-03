@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { storefront } from "@/lib/storefront";
+import { clientIpHeaders } from "@/lib/clientIp";
 import {
   StorefrontError,
   RateLimitError,
@@ -61,7 +62,7 @@ export async function submitWithdrawal(
       message: data.message?.trim() || undefined,
       honeypot: data.honeypot ?? "",
       confirmRead: true,
-    });
+    }, { headers: await clientIpHeaders() });
 
     return { success: true, noticeNumber: result.noticeNumber };
   } catch (err) {
