@@ -200,7 +200,10 @@ export async function loginCustomer(formData: FormData) {
     console.error("Login error:", error);
 
     if (error instanceof RateLimitError) {
-      return { error: "Liian monta kirjautumisyritystä. Yritä hetken kuluttua uudelleen." };
+      return {
+        rateLimited: true,
+        error: "Liian monta kirjautumisyritystä. Yritä hetken kuluttua uudelleen.",
+      };
     }
 
     // Handle email verification required
